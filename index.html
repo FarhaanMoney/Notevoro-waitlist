@@ -1,0 +1,1448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#02030a">
+<meta name="description" content="Think beyond. Build anything. Notevoro brings your knowledge, work, projects, and AI together in one intelligent workspace.">
+<style>html{background:#02030a}body{margin:0}</style>
+</head>
+<body>
+<title>Notevoro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@200;300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: fixed canvas sky behind everything. Screen 1 is the hero (headline + CTA above the Earth limb). Screen 2 is a pure deep-space scene (nebulae and stars painted by the sky canvas). Overlays: waitlist modal, launch-pad drawer, Voro chat. */
+  :root {
+    --bg: #02030a;
+    --ink: #f2f4fc;
+    --ink-2: rgba(214, 221, 242, 0.74);
+    --ink-3: rgba(176, 186, 218, 0.5);
+    --line: rgba(200, 212, 255, 0.13);
+    --line-2: rgba(214, 224, 255, 0.26);
+    --panel: rgba(9, 13, 28, 0.72);
+    --field: rgba(255, 255, 255, 0.045);
+    --dawn: #ffc89c;
+    --dawn-2: #ff9f70;
+    --sky: #93b4ff;
+    --ok: #93dbb4;
+    --warn: #ffb59a;
+    --font: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  body.lock { overflow: hidden; }
+  button { font: inherit; color: inherit; }
+  .ic { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .ic.fill { fill: currentColor; stroke: none; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  :focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; }
+
+  #sky { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+  main, .topbar { position: relative; z-index: 2; }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 30;
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 22px 14px;
+    transition: background .35s ease, backdrop-filter .35s ease;
+  }
+  .topbar.solid { background: none; }
+  .brand { grid-column: 2; display: flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; font-size: 13px; letter-spacing: .34em; text-transform: uppercase; }
+  .brand .ic { width: 24px; height: 24px; }
+  .brand span { padding-left: .34em; }
+  .top-actions { grid-column: 3; justify-self: end; display: flex; align-items: center; gap: 10px; }
+  .linkbtn { background: none; border: 0; padding: 6px 4px; color: var(--ink-2); font-size: 14px; cursor: pointer; text-decoration: none; }
+  .linkbtn:hover { color: var(--ink); }
+  .fine .linkbtn { color: var(--sky); padding: 0; font-size: inherit; }
+
+  /* ---------- buttons ---------- */
+  .cta {
+    display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+    padding: 15px 28px; border: 1px solid var(--line-2); border-radius: 999px;
+    background: rgba(10, 14, 30, .42); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    color: var(--ink); font: 400 14.5px/1 var(--font); cursor: pointer;
+    transition: border-color .25s, box-shadow .25s, background .25s, transform .2s;
+  }
+  .cta:hover { border-color: rgba(255, 205, 170, .6); box-shadow: 0 0 46px rgba(255, 170, 120, .2); background: rgba(22, 24, 44, .6); }
+  .cta .ic { width: 16px; height: 16px; transition: transform .2s; }
+  .cta:hover .ic { transform: translateX(3px); }
+  .cta.solid { background: var(--ink); color: #05070f; border-color: transparent; font-weight: 500; }
+  .cta.solid:hover { background: #fff; box-shadow: 0 0 40px rgba(220, 230, 255, .35); }
+  .cta.small { padding: 11px 20px; font-size: 13.5px; }
+  .cta.wide { width: 100%; padding: 16px 24px; }
+  .cta[disabled] { opacity: .6; cursor: progress; }
+  .ghost { border: 1px solid var(--line-2); background: transparent; border-radius: 999px; padding: 10px 18px; cursor: pointer; font-size: 13.5px; color: var(--ink); transition: background .2s, border-color .2s; }
+  .ghost:hover { background: rgba(255, 255, 255, .06); border-color: var(--line-2); }
+  .pill-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line-2); background: rgba(255, 255, 255, .05); padding: 8px 15px; border-radius: 999px; font-size: 13.5px; cursor: pointer; color: var(--ink); }
+  .pill-btn:hover { background: rgba(255, 255, 255, .1); }
+  .pill-btn .ic { width: 15px; height: 15px; color: var(--dawn); }
+
+  /* ---------- hero ---------- */
+  .hero {
+    position: relative; height: 100svh; min-height: 620px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 22px; padding: 0 20px 16vh; text-align: center;
+  }
+  h1 {
+    margin: 0; max-width: 14.5em;
+    font-weight: 200; font-size: clamp(2.05rem, 5.2vw, 4.1rem); line-height: 1.13; letter-spacing: -.022em;
+    color: rgba(246, 248, 255, .9); text-wrap: balance; text-shadow: 0 2px 40px rgba(0, 0, 8, .85);
+  }
+  .sub { margin: 0; max-width: 30em; font-size: clamp(.95rem, 1.5vw, 1.06rem); line-height: 1.6; font-weight: 300; color: var(--ink-2); text-wrap: balance; }
+  .hero .cta { margin-top: 10px; }
+  .cue { position: absolute; left: 50%; bottom: 3vh; transform: translateX(-50%); padding: 12px 16px; display: block; }
+  .cue span { display: block; width: 1px; height: 46px; background: linear-gradient(var(--ink-3), transparent); animation: cue 2.8s ease-in-out infinite; transform-origin: top; }
+  @keyframes cue { 0%, 100% { transform: scaleY(.45); opacity: .5; } 50% { transform: scaleY(1); opacity: 1; } }
+
+  .rise { animation: rise 1.2s cubic-bezier(.2, .7, .2, 1) both; }
+  .rise.d1 { animation-delay: .3s; } .rise.d2 { animation-delay: .55s; } .rise.d3 { animation-delay: .8s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- deep space screen (the sky canvas paints the nebulae) ---------- */
+  .deep { position: relative; padding-top: 115svh; padding-bottom: 8svh; }
+  .beat { min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; padding: 0 24px; text-align: center; }
+  .beat-a { margin-bottom: 70svh; }
+  .eyebrow { margin: 0; font: 500 12px/1.4 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--dawn); text-shadow: 0 2px 24px rgba(0, 0, 8, .9); }
+  h2 { margin: 0; font-weight: 200; font-size: clamp(1.9rem, 4.4vw, 3.4rem); line-height: 1.12; letter-spacing: -.02em; max-width: 16em; text-wrap: balance; text-shadow: 0 2px 40px rgba(0, 0, 8, .9); }
+  h2.big { font-size: clamp(2.4rem, 7vw, 5.4rem); line-height: 1.04; }
+  .lede { margin: 0; max-width: 34em; font-weight: 300; font-size: clamp(1.02rem, 1.6vw, 1.2rem); line-height: 1.7; color: rgba(232, 236, 250, .86); text-wrap: pretty; text-shadow: 0 2px 30px rgba(0, 0, 8, .95), 0 0 8px rgba(0, 0, 8, .7); }
+  .beat .fine { margin-top: 30px; }
+  /* wordmark fades in at the bottom after the zoom reaches its maximum */
+  .wordmark { position: fixed; z-index: 3; left: 50%; bottom: 5svh; display: flex; align-items: center; gap: clamp(12px, 1.6vw, 22px); pointer-events: none; color: var(--ink); white-space: nowrap;
+    opacity: var(--wm, 0); transform: translateX(-50%); translate: 0 calc((1 - var(--wm, 0)) * 18px); text-shadow: 0 2px 40px rgba(0, 0, 8, .9); }
+  .wordmark .ic { width: clamp(30px, 4vw, 60px); height: auto; aspect-ratio: 1; color: var(--dawn); }
+  .wordmark span { font-weight: 200; font-size: clamp(2.4rem, 6vw, 5.2rem); line-height: 1; letter-spacing: .04em; }
+
+  /* ---------- modal ---------- */
+  .backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: rgba(1, 2, 8, .66); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: fade .25s ease both; }
+  .modal { position: relative; width: min(100%, 580px); max-height: calc(100svh - 40px); overflow: auto; border: 1px solid var(--line-2); border-radius: 26px; background: linear-gradient(180deg, rgba(20, 26, 50, .94), rgba(8, 11, 24, .97)); box-shadow: 0 50px 140px rgba(0, 0, 0, .7); padding: 34px; animation: pop .4s cubic-bezier(.2, .8, .2, 1) both; outline: none; }
+  @keyframes pop { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }
+  .x { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; }
+  .x:hover { background: rgba(255, 255, 255, .07); color: var(--ink); }
+  .modal h2 { font-size: 1.9rem; max-width: none; }
+  .m-sub { margin: 10px 0 24px; color: var(--ink-2); font-weight: 300; font-size: .98rem; }
+  form .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .field { display: flex; flex-direction: column; gap: 7px; border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
+  .grid2 .field { margin: 0; }
+  .field label, .field legend, .lbl { font-size: 12.5px; color: var(--ink-2); padding: 0; }
+  .opt { color: var(--ink-3); margin-left: 4px; }
+  input[type="text"], input[type="email"], input:not([type]), select, textarea { width: 100%; background: var(--field); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; color: var(--ink); font: 400 15px/1.4 var(--font); transition: border-color .2s, box-shadow .2s; }
+  textarea { resize: vertical; min-height: 78px; }
+  input::placeholder, textarea::placeholder { color: rgba(176, 186, 218, .42); }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--sky); box-shadow: 0 0 0 3px rgba(147, 180, 255, .16); }
+  input[aria-invalid="true"] { border-color: var(--warn); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chipcheck input { position: absolute; opacity: 0; pointer-events: none; }
+  .chipcheck span { display: inline-block; padding: 9px 15px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 13.5px; color: var(--ink-2); cursor: pointer; transition: all .2s; user-select: none; }
+  .chipcheck input:checked + span { background: rgba(255, 200, 156, .14); border-color: rgba(255, 200, 156, .55); color: var(--ink); }
+  .chipcheck input:focus-visible + span { outline: 2px solid var(--sky); outline-offset: 2px; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; color: var(--ink-2); margin: 4px 0 6px; cursor: pointer; }
+  .check input { margin-top: 3px; accent-color: #ffc89c; width: 16px; height: 16px; }
+  .err { min-height: 1.3em; margin: 6px 0 12px; font-size: 13px; color: var(--warn); }
+  .fine { margin: 14px 0 0; font-size: 12.5px; color: var(--ink-3); text-align: center; font-weight: 300; }
+  .okmark { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: rgba(147, 219, 180, .12); border: 1px solid rgba(147, 219, 180, .35); color: var(--ok); margin-bottom: 18px; }
+  .okmark .ic { width: 24px; height: 24px; }
+  .place { display: flex; align-items: baseline; gap: 12px; margin: 4px 0 22px; }
+  .place-num { font-weight: 200; font-size: 3.4rem; line-height: 1; letter-spacing: -.03em; }
+  .place-meta { color: var(--ink-2); font-size: .95rem; display: inline-flex; gap: 10px; align-items: center; }
+  .chip-prev { font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; border: 1px solid var(--line-2); color: var(--ink-3); border-radius: 999px; padding: 5px 8px; }
+  .copyrow { display: flex; gap: 8px; margin: 8px 0 0; }
+  .copyrow input { flex: 1; min-width: 0; font-size: 13.5px; }
+  #sPad { margin-top: 22px; }
+
+  /* ---------- launch pad drawer ---------- */
+  .scrim { position: fixed; inset: 0; z-index: 54; background: rgba(1, 2, 8, .5); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); animation: fade .3s both; }
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 55; width: min(100%, 450px); background: rgba(6, 9, 20, .95); -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px); border-left: 1px solid var(--line); transform: translateX(104%); visibility: hidden; transition: transform .5s cubic-bezier(.2, .8, .2, 1), visibility 0s .5s; overflow-y: auto; overscroll-behavior: contain; }
+  .drawer.open { transform: none; visibility: visible; transition: transform .5s cubic-bezier(.2, .8, .2, 1), visibility 0s; }
+  .pad { padding: calc(22px + env(safe-area-inset-top, 0px)) 22px calc(40px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; }
+  .pad-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+  .pad-head h3 { margin: 0; font-weight: 300; font-size: 1.6rem; letter-spacing: -.01em; }
+  .pad-head p { margin: 2px 0 0; color: var(--ink-3); font-size: 13px; }
+  .pad-head .x { position: static; flex: none; }
+  .pcard { border: 1px solid var(--line); border-radius: 18px; padding: 18px; background: rgba(255, 255, 255, .028); }
+  .pcard h4 { margin: 0 0 12px; font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .big { font-weight: 200; font-size: 3rem; line-height: 1; letter-spacing: -.03em; }
+  .big small { font-size: 1rem; color: var(--ink-3); font-weight: 300; letter-spacing: 0; margin-left: 6px; }
+  .tier { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; font-size: 13.5px; color: var(--ink-2); }
+  .tier b { font-weight: 500; color: var(--dawn); }
+  .meter { height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .08); margin: 10px 0 8px; overflow: hidden; }
+  .meter i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--sky), var(--dawn)); transition: width .8s cubic-bezier(.2, .7, .2, 1); }
+  .tiny { font-size: 12.5px; color: var(--ink-3); font-weight: 300; margin: 0; }
+  .streak-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .dots { display: flex; gap: 7px; margin: 12px 0 14px; }
+  .dots i { width: 100%; max-width: 30px; height: 6px; border-radius: 6px; background: rgba(255, 255, 255, .09); }
+  .dots i.on { background: linear-gradient(90deg, var(--dawn), var(--dawn-2)); box-shadow: 0 0 14px rgba(255, 170, 120, .35); }
+  .prompt { font-size: 1.12rem; font-weight: 300; line-height: 1.45; margin: 0 0 14px; color: var(--ink); text-wrap: balance; }
+  .vault { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .vault li { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; padding: 11px 13px; border: 1px solid var(--line); border-radius: 12px; font-size: 13.5px; background: rgba(255, 255, 255, .025); }
+  .vault li span { min-width: 0; overflow-wrap: anywhere; }
+  .vault button { background: none; border: 0; color: var(--ink-3); cursor: pointer; padding: 2px; border-radius: 6px; }
+  .vault button:hover { color: var(--warn); }
+  .checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .checklist li { display: flex; align-items: center; gap: 12px; padding: 8px 0; font-size: 14px; color: var(--ink-2); }
+  .checklist .tick { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line-2); display: grid; place-items: center; flex: none; color: transparent; }
+  .checklist li.on { color: var(--ink-3); }
+  .checklist li.on .tick { background: rgba(147, 219, 180, .15); border-color: rgba(147, 219, 180, .5); color: var(--ok); }
+  .checklist .tick .ic { width: 12px; height: 12px; stroke-width: 2.2; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; }
+  .badge { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 12.5px; color: var(--ink-3); }
+  .badge.on { color: var(--ink); border-color: rgba(255, 200, 156, .45); background: rgba(255, 200, 156, .08); }
+  .set-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 14px; color: var(--ink-2); }
+  .switch { position: relative; width: 44px; height: 26px; flex: none; }
+  .switch input { position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0; }
+  .switch span { position: absolute; inset: 0; border-radius: 26px; background: rgba(255, 255, 255, .12); transition: background .2s; pointer-events: none; }
+  .switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .2s; }
+  .switch input:checked + span { background: var(--dawn-2); }
+  .switch input:checked + span::after { transform: translateX(18px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--sky); outline-offset: 2px; }
+  .pad .copyrow { margin-top: 12px; }
+  .pad textarea { min-height: 70px; }
+  .pad .row-end { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; }
+
+  /* ---------- Voro chat ---------- */
+  .fab { position: fixed; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 40; display: inline-flex; align-items: center; gap: 10px; padding: 13px 20px 13px 16px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(12, 16, 34, .78); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); color: var(--ink); font-size: 14px; cursor: pointer; box-shadow: 0 14px 50px rgba(0, 0, 0, .5); transition: border-color .25s, box-shadow .25s; }
+  .fab:hover { border-color: rgba(255, 205, 170, .6); box-shadow: 0 14px 50px rgba(0, 0, 0, .5), 0 0 40px rgba(255, 170, 120, .18); }
+  .fab .ic { width: 20px; height: 20px; color: var(--dawn); }
+  .fab .dot { position: absolute; top: 6px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--dawn-2); box-shadow: 0 0 10px var(--dawn-2); }
+  .nudge { position: fixed; right: 20px; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); z-index: 40; max-width: 230px; padding: 12px 15px; border-radius: 16px 16px 4px 16px; border: 1px solid var(--line-2); background: rgba(12, 16, 34, .92); font-size: 13.5px; color: var(--ink-2); animation: rise .6s both; cursor: pointer; }
+  .chat { position: fixed; right: 20px; bottom: calc(82px + env(safe-area-inset-bottom, 0px)); z-index: 58; width: min(390px, calc(100vw - 24px)); height: min(560px, calc(100svh - 110px)); display: flex; flex-direction: column; border: 1px solid var(--line-2); border-radius: 22px; background: rgba(7, 10, 22, .95); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 40px 110px rgba(0, 0, 0, .65); overflow: hidden; animation: pop .35s cubic-bezier(.2, .8, .2, 1) both; transform-origin: bottom right; }
+  .chat header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 14px 14px 16px; border-bottom: 1px solid var(--line); }
+  .who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .who .av { background: linear-gradient(135deg, var(--dawn), var(--sky)); width: 34px; height: 34px; }
+  .who .av .ic { width: 17px; height: 17px; color: #0a0d1a; }
+  .who b { font-weight: 500; font-size: 14.5px; display: block; line-height: 1.2; }
+  .who small { font-size: 11.5px; color: var(--ink-3); }
+  .chat .x { position: static; width: 32px; height: 32px; }
+  .msgs { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; overscroll-behavior: contain; }
+  .msg { display: flex; flex-direction: column; gap: 8px; max-width: 88%; }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .bub { padding: 11px 14px; border-radius: 16px; font-size: 14px; line-height: 1.5; font-weight: 300; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .msg.user .bub { background: rgba(147, 180, 255, .17); border-bottom-right-radius: 5px; }
+  .msg.ai .bub { background: rgba(255, 255, 255, .055); border-bottom-left-radius: 5px; }
+  .msg .act { border: 1px solid var(--line-2); background: transparent; border-radius: 999px; padding: 7px 13px; font-size: 12.5px; cursor: pointer; color: var(--ink-2); display: inline-flex; gap: 7px; align-items: center; }
+  .msg .act:hover { background: rgba(255, 255, 255, .07); color: var(--ink); }
+  .msg .act .ic { width: 14px; height: 14px; color: var(--dawn); }
+  .typing { display: inline-flex; gap: 4px; padding: 14px 16px; }
+  .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); animation: blink 1.2s infinite; }
+  .typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+  @keyframes blink { 0%, 60%, 100% { opacity: .25; transform: none; } 30% { opacity: 1; transform: translateY(-3px); } }
+  .sugg { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 12px; }
+  .sugg button { border: 1px solid var(--line-2); background: transparent; border-radius: 999px; padding: 8px 13px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; text-align: left; }
+  .sugg button:hover { background: rgba(255, 255, 255, .07); color: var(--ink); }
+  .chat form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
+  .chat form input { flex: 1; min-width: 0; border-radius: 999px; padding: 12px 16px; font-size: 14.5px; }
+  .chat form button { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--ink); color: #05070f; cursor: pointer; display: grid; place-items: center; }
+  .chat form button .ic { width: 18px; height: 18px; }
+
+  .toasts { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; gap: 10px; align-items: center; pointer-events: none; width: max-content; max-width: calc(100vw - 32px); }
+  .toast { pointer-events: auto; display: flex; align-items: center; gap: 14px; padding: 12px 16px 12px 18px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(14, 18, 38, .96); box-shadow: 0 20px 60px rgba(0, 0, 0, .6); font-size: 14px; animation: rise .45s both; }
+  .toast button { border: 0; background: none; color: var(--dawn); cursor: pointer; font-size: 14px; padding: 0; }
+
+  @media (max-width: 900px) {
+  }
+  @media (max-width: 560px) {
+    form .grid2 { grid-template-columns: minmax(0, 1fr); }
+    .modal { padding: 26px 20px; border-radius: 22px; }
+    .fab span { display: none; }
+    .fab { padding: 14px; }
+    .hero { padding-bottom: 20vh; }
+    .chat { right: 12px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+    .brand { letter-spacing: .26em; }
+  }
+  @media (max-height: 560px) { .hero { padding-bottom: 6vh; gap: 14px; } }
+  @media (prefers-reduced-motion: reduce) {
+    .rise, .cue span, .typing i, .modal, .backdrop, .chat, .toast, .nudge { animation: none !important; }
+    .drawer { transition: none; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="logo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path style="fill:none" d="M2 3.2 9.7 9.2V14.5H2Z"/><path style="fill:none" d="M2 14.5H15.8L22 20.8H9.7Z"/></g></symbol>
+    <symbol id="i-flow" viewBox="0 0 24 24"><circle cx="5" cy="6" r="2.2"/><circle cx="5" cy="18" r="2.2"/><circle cx="19.5" cy="12" r="2.2"/><path d="M7.2 6H11a4 4 0 0 1 4 4v.5M7.2 18H11a4 4 0 0 0 4-4v-.5M15 12h2.2"/></symbol>
+    <symbol id="i-agent" viewBox="0 0 24 24"><rect x="4.5" y="8" width="15" height="10.5" rx="4"/><path d="M12 4v4M9 13.2h.01M15 13.2h.01M9.5 21h5"/></symbol>
+    <symbol id="i-space" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="3.2"/><path d="M9.2 4v16M9.2 10H20.5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6a2.5 2.5 0 0 1-2.5 2.5H11l-4 3.5V15h-.5A2.5 2.5 0 0 1 5 12.5Z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M2.5 8h11M9 3.5 13.5 8 9 12.5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 20 20"><path d="m4.5 10.5 3.5 3.5 7.5-8"/></symbol>
+    <symbol id="i-close" viewBox="0 0 20 20"><path d="m5 5 10 10M15 5 5 15"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/></symbol>
+    <symbol id="i-send" viewBox="0 0 20 20"><path d="M10 16V4M5 9l5-5 5 5"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 20 20"><path d="M5.5 3.5h9v13L10 13l-4.5 3.5Z"/></symbol>
+  </defs>
+</svg>
+
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="wordmark" aria-hidden="true"><svg class="ic fill"><use href="#logo"/></svg><span>Notevoro</span></div>
+
+<header class="topbar" id="topbar">
+  <span></span>
+  <a class="brand rise" href="#top" id="brandLink" aria-label="Notevoro home"><svg class="ic fill"><use href="#logo"/></svg><span>Notevoro</span></a>
+  <div class="top-actions">
+    <button class="linkbtn" id="signinBtn" type="button" data-open="signin">Sign in</button>
+    <button class="pill-btn" id="padBtn" type="button" data-action="openpad" hidden><svg class="ic"><use href="#i-moon"/></svg><span>Launch pad</span></button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" aria-labelledby="h1">
+    <h1 id="h1" class="rise d1">Think beyond. Build anything.</h1>
+    <p class="sub rise d2">Your ideas, powered by intelligence.</p>
+    <button class="cta rise d3 js-join" type="button"><span>Join the waitlist</span><svg class="ic"><use href="#i-arrow"/></svg></button>
+    <a class="cue" href="#deep" id="cue" aria-label="Scroll down"><span></span></a>
+  </section>
+
+  <section class="deep" id="deep">
+    <div class="beat beat-a" id="beatA">
+      <p class="eyebrow">Your ideas, powered by intelligence.</p>
+      <h2>From the first thought to the finished result.</h2>
+      <p class="lede">Notevoro brings your knowledge, work, projects, and AI together in one intelligent workspace — helping you go from the first thought to the finished result.</p>
+    </div>
+    <div class="beat beat-b">
+      <h2 class="big">Think beyond.<br>Build anything.</h2>
+      <button class="cta solid js-join" type="button"><span>Join the waitlist</span><svg class="ic"><use href="#i-arrow"/></svg></button>
+      <p class="fine">© 2026 Notevoro</p>
+    </div>
+  </section>
+</main>
+
+<!-- waitlist / sign-in modal -->
+<div class="backdrop" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle" tabindex="-1">
+    <button class="x" id="mClose" type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+
+    <div data-view="join">
+      <p class="eyebrow">Early access</p>
+      <h2 id="mTitle">Join the Notevoro waitlist</h2>
+      <p class="m-sub">A few details help us let people in the right way. It takes under a minute.</p>
+      <form id="joinForm" novalidate>
+        <div class="grid2">
+          <div class="field"><label for="f-name">Full name</label><input id="f-name" name="name" type="text" autocomplete="name" maxlength="80" placeholder="Ada Lovelace"></div>
+          <div class="field"><label for="f-email">Email</label><input id="f-email" name="email" type="email" autocomplete="email" inputmode="email" maxlength="254" placeholder="you@company.com"></div>
+          <div class="field"><label for="f-role">I mostly work as</label>
+            <select id="f-role" name="role"><option value="">Choose one</option><option>Founder</option><option>Operator or manager</option><option>Creator</option><option>Developer</option><option>Designer</option><option>Freelancer</option><option>Something else</option></select></div>
+          <div class="field"><label for="f-team">Team size</label>
+            <select id="f-team" name="team"><option value="">Choose one</option><option>Just me</option><option>2 to 10</option><option>11 to 50</option><option>51 to 200</option><option>200+</option></select></div>
+        </div>
+        <fieldset class="field"><legend>What excites you most?</legend>
+          <div class="chips">
+            <label class="chipcheck"><input type="checkbox" name="interest" value="Workflows"><span>Workflows</span></label>
+            <label class="chipcheck"><input type="checkbox" name="interest" value="Agents"><span>Agents</span></label>
+            <label class="chipcheck"><input type="checkbox" name="interest" value="Workspace"><span>Workspace</span></label>
+            <label class="chipcheck"><input type="checkbox" name="interest" value="Voro AI"><span>Voro AI</span></label>
+          </div>
+        </fieldset>
+        <div class="field"><label for="f-use">What would you hand off first? <span class="opt">Optional</span></label><textarea id="f-use" name="use" rows="3" maxlength="400" placeholder="Weekly reports, customer replies, research..."></textarea></div>
+        <label class="check"><input type="checkbox" id="f-mkt" checked><span>Email me product news and early access updates.</span></label>
+        <p class="err" id="jErr" role="alert"></p>
+        <button class="cta solid wide" id="jSubmit" type="submit"><span>Join the waitlist</span><svg class="ic"><use href="#i-arrow"/></svg></button>
+        <p class="fine" id="demoNote" hidden>Preview mode: signups stay in this browser until Supabase keys are added.</p>
+      </form>
+      <p class="fine">Already joined? <button class="linkbtn" type="button" data-open="signin">Sign in</button></p>
+    </div>
+
+    <div data-view="success" hidden>
+      <div class="okmark"><svg class="ic"><use href="#i-check"/></svg></div>
+      <h2>You're on the list</h2>
+      <p class="m-sub" id="sSub">Thanks for joining.</p>
+      <div class="place"><span class="place-num" id="sPos">#0</span><span class="place-meta">in line <span class="chip-prev" id="sPrev" hidden>Preview</span></span></div>
+      <label class="lbl" for="sLink">Your invite link</label>
+      <div class="copyrow"><input id="sLink" type="text" readonly><button type="button" class="ghost" id="sCopy">Copy</button></div>
+      <p class="fine" style="text-align:left">Every friend who joins with your link moves you up the list.</p>
+      <button class="cta solid wide" id="sPad" type="button"><span id="sPadLbl">Open your launch pad</span></button>
+    </div>
+
+    <div data-view="signin" hidden>
+      <p class="eyebrow">Welcome back</p>
+      <h2>Sign in to your launch pad</h2>
+      <p class="m-sub" id="siSub">Your place in line, your streak and your Idea Vault are waiting.</p>
+      <form id="signinForm" novalidate>
+        <div class="field"><label for="si-email">Email</label><input id="si-email" type="email" autocomplete="email" inputmode="email" maxlength="254" placeholder="you@company.com"></div>
+        <p class="err" id="siErr" role="alert"></p>
+        <button class="cta solid wide" id="siSubmit" type="submit"><span id="siLbl">Email me a sign-in link</span></button>
+      </form>
+      <p class="fine">New here? <button class="linkbtn" type="button" data-open="join">Join the waitlist</button></p>
+    </div>
+
+    <div data-view="sent" hidden>
+      <div class="okmark"><svg class="ic"><use href="#i-check"/></svg></div>
+      <h2>Check your inbox</h2>
+      <p class="m-sub">We sent a sign-in link to <b id="sentTo"></b>. Open it on this device and your launch pad will be ready. It can take a minute to arrive.</p>
+      <button class="ghost" type="button" data-action="closemodal">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- launch pad -->
+<div class="scrim" id="padScrim" hidden></div>
+<aside class="drawer" id="pad" aria-hidden="true" aria-label="Your launch pad"><div class="pad" id="padBody"></div></aside>
+
+<!-- Voro chat -->
+<div class="nudge" id="nudge" hidden role="button" tabindex="0">Got an idea? Tell Voro and it will take it from first thought to finished result.</div>
+<button class="fab" id="chatFab" type="button" aria-expanded="false" aria-controls="chat"><svg class="ic fill"><use href="#logo"/></svg><span>Ask Voro</span><i class="dot" id="fabDot" hidden></i></button>
+<section class="chat" id="chat" role="dialog" aria-label="Voro AI chat" hidden>
+  <header>
+    <div class="who"><span class="av"><svg class="ic"><use href="#i-spark"/></svg></span><div><b>Voro AI</b><small id="chatSub">Preview · scripted replies</small></div></div>
+    <button class="x" id="chatClose" type="button" aria-label="Close chat"><svg class="ic"><use href="#i-close"/></svg></button>
+  </header>
+  <div class="msgs" id="msgs" aria-live="polite"></div>
+  <div class="sugg" id="sugg"></div>
+  <form id="chatForm" autocomplete="off">
+    <label class="sr" for="chatIn">Message Voro</label>
+    <input id="chatIn" type="text" maxlength="500" placeholder="Tell Voro your idea...">
+    <button type="submit" aria-label="Send"><svg class="ic"><use href="#i-send"/></svg></button>
+  </form>
+</section>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script>
+(() => {
+  'use strict';
+  const cv = document.getElementById('sky');
+  const ctx = cv.getContext('2d');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- helpers ---------- */
+  const clamp = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x;
+  const ss = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+  const lerp = (a, b, t) => a + (b - a) * t;
+  function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function h3(x, y, z) { let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 1274126177); h = Math.imul(h ^ h >>> 13, 1274126177); return ((h ^ h >>> 16) >>> 0) / 4294967296; }
+  function n3(x, y, z) {
+    const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+    let xf = x - xi, yf = y - yi, zf = z - zi;
+    xf = xf * xf * (3 - 2 * xf); yf = yf * yf * (3 - 2 * yf); zf = zf * zf * (3 - 2 * zf);
+    const a = h3(xi, yi, zi), b = h3(xi + 1, yi, zi), c = h3(xi, yi + 1, zi), d = h3(xi + 1, yi + 1, zi);
+    const e = h3(xi, yi, zi + 1), f = h3(xi + 1, yi, zi + 1), g = h3(xi, yi + 1, zi + 1), h = h3(xi + 1, yi + 1, zi + 1);
+    const x1 = a + (b - a) * xf, x2 = c + (d - c) * xf, x3 = e + (f - e) * xf, x4 = g + (h - g) * xf;
+    const y1 = x1 + (x2 - x1) * yf, y2 = x3 + (x4 - x3) * yf;
+    return y1 + (y2 - y1) * zf;
+  }
+  // fbm with a small rotation per octave to hide the value-noise grid
+  function fbm(x, y, z, o) {
+    let s = 0, a = 0.5, n = 0;
+    for (let i = 0; i < o; i++) {
+      s += a * n3(x, y, z); n += a; a *= 0.5;
+      const t = x * 0.8 - y * 0.6; y = (x * 0.6 + y * 0.8) * 2.03; x = t * 2.03;
+      const u = y * 0.8 - z * 0.6; z = (y * 0.6 + z * 0.8); y = u; z *= 1.0;
+    }
+    return s / n;
+  }
+  const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+
+  /* ---------- state ---------- */
+  let waitT = 0, W, H, DPR, G, bg, moonC, vig, nebula = null, deepStars = null, earth = null, earthLo = null, tHi = 0, shadeC = null, stars = [], bright = [], tReady = 0, built = 0, sy = 0;
+  const shoots = [];
+  const lgOf = (w, h) => Math.max(w, h * 0.9);
+
+  function build() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const w0 = window.innerWidth || document.documentElement.clientWidth, h0 = window.innerHeight || document.documentElement.clientHeight;
+    // the preview frame can report 0x0 before it is laid out: wait and try again
+    if (!(w0 > 0) || !(h0 > 0)) { clearTimeout(waitT); waitT = setTimeout(build, 120); return; }
+    W = w0; H = h0; setWordmark();
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    const Lg = lgOf(W, H);
+    const R = Math.max(1.9 * W, 1.25 * H);
+    const T = H * (W < H ? 0.79 : 0.72);
+    const cx = W * 0.25, cy = T + R;
+    const xs = W * (W < H ? 0.3 : 0.33);
+    const ys = cy - Math.sqrt(R * R - (xs - cx) * (xs - cx));
+    G = { R, cx, cy, xs, ys, Lg };
+    buildBg(); makeStars(); buildVignette();
+    earth = null; earthLo = null; nebula = null; deepStars = null; built++;
+    const mine = built;
+    setTimeout(() => buildDeepAsync(mine, () => { if (mine === built && reduce) render(99); }), 60);
+    // a quick low-res Earth appears at once, then the detailed one replaces it
+    setTimeout(() => buildEarthAsync(mine, 0.3, (lo) => {
+      if (mine !== built) return;
+      earthLo = lo; tReady = performance.now(); if (reduce) render(99);
+      buildEarthAsync(mine, 0, (hi) => { if (mine !== built) return; earth = hi; tHi = performance.now(); if (reduce) render(99); });
+    }), 30);
+  }
+
+  /* ---------- static background: sky, milky way, moon ---------- */
+  function buildBg() {
+    bg = mk(Math.round(W * DPR), Math.round(H * DPR));
+    const b = bg.getContext('2d'); b.scale(DPR, DPR);
+    let g = b.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#000104'); g.addColorStop(0.6, '#02040b'); g.addColorStop(1, '#050a18');
+    b.fillStyle = g; b.fillRect(0, 0, W, H);
+
+    const k = 5, lw = Math.ceil(W / k), lh = Math.ceil(H / k);
+    const mc = mk(lw, lh), mx = mc.getContext('2d'), img = mx.createImageData(lw, lh), D = img.data;
+    const th = -0.5, dxv = Math.cos(th), dyv = Math.sin(th), nx = -dyv, ny = dxv;
+    const bx = W * 0.52, by = H * 0.3, bw = Math.min(W, H * 1.6) * 0.15;
+    for (let y = 0; y < lh; y++) for (let x = 0; x < lw; x++) {
+      const X = x * k, Y = y * k;
+      const d = ((X - bx) * nx + (Y - by) * ny) / bw, band = Math.exp(-d * d);
+      if (band < 0.01) continue;
+      const along = ((X - bx) * dxv + (Y - by) * dyv) / G.Lg;
+      const cl = fbm(X * 0.011, Y * 0.011, 7.7, 4), dust = fbm(X * 0.0045, Y * 0.0045, 3.1, 4);
+      const core = Math.exp(-along * along * 2.2);
+      const v = band * (0.3 + 1.35 * ss(0.38, 0.72, cl)) * (1 - 0.8 * ss(0.56, 0.74, dust)) * (0.55 + 0.6 * core);
+      const w = ss(0.45, 0.8, fbm(X * 0.006, Y * 0.006, 1.3, 3)), i = (y * lw + x) * 4;
+      D[i] = 110 + 120 * w; D[i + 1] = 135 + 70 * w; D[i + 2] = 230 - 70 * w; D[i + 3] = clamp(v * 0.07) * 255;
+    }
+    mx.putImageData(img, 0, 0);
+    b.imageSmoothingQuality = 'high'; b.drawImage(mc, 0, 0, W, H);
+    const r = rng(42);
+    for (let n = 0, drawn = 0; n < 40000 && drawn < 2400; n++) {
+      const X = r() * W, Y = r() * H, d = ((X - bx) * nx + (Y - by) * ny) / bw;
+      if (r() > Math.exp(-d * d * 1.3)) continue;
+      b.globalAlpha = 0.08 + r() * 0.34; b.fillStyle = r() > 0.8 ? '#ffe6cc' : '#d6e2ff';
+      const s = 0.4 + r() * 0.5; b.fillRect(X, Y, s, s); drawn++;
+    }
+    b.globalAlpha = 1;
+    moonC = mk(Math.round(W * DPR), Math.round(H * DPR));
+    const mc2 = moonC.getContext('2d'); mc2.scale(DPR, DPR); buildMoon(mc2);
+  }
+
+  function buildMoon(b) {
+    const mr = W < H ? 22 : Math.max(26, Math.min(W, H) * 0.05);
+    const mxp = W * (W < H ? 0.87 : 0.17), myp = H * (W < H ? 0.095 : 0.27);
+    const pad = 6, size = Math.ceil((mr + pad) * 2 * DPR);
+    const c = mk(size, size), x = c.getContext('2d'), img = x.createImageData(size, size), D = img.data;
+    const rr = rng(11), craters = [];
+    for (let i = 0; i < 52; i++) craters.push([(rr() * 2 - 1) * 0.9, (rr() * 2 - 1) * 0.9, 0.022 + Math.pow(rr(), 2.2) * 0.14]);
+    let L = [0.58, 0.62, -0.3]; const ln = Math.hypot(...L); L = L.map(v => v / ln);
+    for (let py = 0; py < size; py++) for (let px = 0; px < size; px++) {
+      const u = (px / DPR - (mr + pad)) / mr, v = (py / DPR - (mr + pad)) / mr, r2 = u * u + v * v;
+      if (r2 > 1.1) continue;
+      const r = Math.sqrt(r2), aa = clamp((1 - r) * mr * DPR);
+      if (aa <= 0) continue;
+      const w = Math.sqrt(Math.max(0, 1 - r2));
+      let alb = 0.56 + (fbm(u * 3.2 + 4, v * 3.2, w * 3.2, 5) - 0.5) * 0.6;
+      alb *= 1 - 0.5 * ss(0.5, 0.6, fbm(u * 1.7 + 9, v * 1.7, w * 1.7 + 2, 3));
+      for (const [cu, cv2, cr] of craters) {
+        const d = Math.hypot(u - cu, v - cv2) / cr;
+        if (d < 1.3) alb += -0.12 * (1 - Math.min(1, d * d)) + 0.1 * Math.exp(-Math.pow((d - 1) / 0.14, 2));
+      }
+      const dot = u * L[0] + v * L[1] + w * L[2];
+      const lit = ss(-0.03, 0.32, dot), limb = 0.8 + 0.2 * w, val = clamp(alb) * limb * 0.9;
+      const i = (py * size + px) * 4, e = 0.1 * clamp(alb);
+      D[i] = 255 * clamp(val * lit + e * 0.55); D[i + 1] = 255 * clamp(val * lit * 0.95 + e * 0.7); D[i + 2] = 255 * clamp(val * lit * 0.88 + e);
+      D[i + 3] = aa * 255;
+    }
+    x.putImageData(img, 0, 0);
+    const g = b.createRadialGradient(mxp, myp, mr * 0.9, mxp, myp, mr * 3.4);
+    g.addColorStop(0, 'rgba(150,170,235,0.08)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    b.fillStyle = g; b.fillRect(mxp - mr * 4, myp - mr * 4, mr * 8, mr * 8);
+    b.imageSmoothingQuality = 'high';
+    b.drawImage(c, mxp - mr - pad, myp - mr - pad, (mr + pad) * 2, (mr + pad) * 2);
+  }
+
+  function buildVignette() {
+    vig = mk(Math.round(W * DPR), Math.round(H * DPR));
+    const v = vig.getContext('2d'); v.scale(DPR, DPR);
+    const g = v.createRadialGradient(W * 0.5, H * 0.46, G.Lg * 0.28, W * 0.5, H * 0.5, G.Lg * 0.98);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.6)');
+    v.fillStyle = g; v.fillRect(0, 0, W, H);
+  }
+
+  function makeStars() {
+    const r = rng(7), n = Math.min(1300, Math.round(W * H / 2100));
+    const cols = ['#ffffff', '#ffffff', '#dfe8ff', '#bcd0ff', '#fff1de', '#ffd9b0'];
+    stars = []; bright = [];
+    for (let i = 0; i < n; i++) stars.push({ x: r() * W, y: r() * H * 0.95, r: 0.35 + Math.pow(r(), 6) * 1.2, a: 0.28 + Math.sqrt(r()) * 0.62, tw: 0.25 + r() * 0.5, sp: 0.6 + r() * 2.2, ph: r() * 6.28, c: cols[(r() * cols.length) | 0] });
+    for (let i = 0; i < 8; i++) bright.push({ x: r() * W, y: r() * G.ys * 0.8, s: 6 + r() * 10, a: 0.5 + r() * 0.4, sp: 0.4 + r() * 1.2, ph: r() * 6.28, c: cols[(r() * cols.length) | 0] });
+  }
+
+  /* ---------- Earth: per-pixel limb render, done in time slices ---------- */
+  function buildEarthAsync(token, esArg, done) {
+    const es = esArg || Math.max(0.5, Math.min(DPR, 2000 / W));
+    const ew = Math.ceil(W * es), eh = Math.ceil(H * 1.5 * es);
+    const c = mk(ew, eh), x = c.getContext('2d'), img = x.createImageData(ew, eh), D = img.data;
+    const Rr = G.R, Lg = G.Lg, xs = G.xs;
+    const uS = 1 / (0.32 * Lg), qS = 1 / (0.17 * Lg);
+    const cA = Math.cos(0.7), sA = Math.sin(0.7), cB = Math.cos(1.15), sB = Math.sin(1.15);
+    let py = Math.max(0, Math.floor((G.cy - Rr * 1.065) * es));
+
+    function row(py) {
+      const Y = py / es, dyv = (Y - G.cy) / Rr;
+      for (let px = 0; px < ew; px++) {
+        const X = px / es, dx = (X - G.cx) / Rr, r2 = dx * dx + dyv * dyv;
+        if (r2 > 1.13) continue;
+        const r = Math.sqrt(r2), i = (py * ew + px) * 4;
+        const u = (X - xs) * uS;              // < 0: day side, > 0: night side
+        const q = (X - xs) * qS, sunW = Math.exp(-q * q);
+        const dayA = ss(0.3, -0.3, u);
+        // atmosphere layer colours turn orange and red close to the sunrise
+        const Ar = lerp(0.82, 1.0, 0.9 * sunW), Ag = lerp(0.94, 0.52, 0.9 * sunW), Ab = lerp(1.0, 0.2, 0.9 * sunW);
+        const Br = lerp(0.22, 0.95, 0.45 * sunW), Bg = lerp(0.5, 0.48, 0.45 * sunW), Bb = lerp(1.0, 0.35, 0.45 * sunW);
+
+        if (r > 1) {                           // beyond the limb: layered atmosphere and airglow
+          const d = (r - 1) * Rr;
+          const wA = Math.exp(-d / (0.0007 * Rr + 1.2)) * 0.95, wB = Math.exp(-d / (0.0032 * Rr)) * 0.8;
+          const wC = Math.exp(-d / (0.009 * Rr)) * 0.42, wD = Math.exp(-d / (0.024 * Rr)) * 0.11;
+          const Ia = (0.1 + 0.95 * dayA + 0.5 * sunW) * 0.85, ws = wA + wB + wC + wD, Wm = ws * Ia;
+          const gz = (d - 0.012 * Rr) / (0.0022 * Rr), wG = Math.exp(-gz * gz) * 0.13 * ss(-0.1, 0.4, u);
+          const tot = Wm + wG; if (tot < 0.004) continue;
+          let cr = (Ar * wA + Br * wB + 0.07 * wC + 0.2 * wD) / ws, cg = (Ag * wA + Bg * wB + 0.18 * wC + 0.12 * wD) / ws, cb = (Ab * wA + Bb * wB + 0.72 * wC + 0.48 * wD) / ws;
+          if (wG > 0) { const m = wG / tot; cr = cr * (1 - m) + 0.25 * m; cg = cg * (1 - m) + 0.95 * m; cb = cb * (1 - m) + 0.55 * m; }
+          D[i] = 255 * cr; D[i + 1] = 255 * cg; D[i + 2] = 255 * cb; D[i + 3] = 255 * (1 - Math.exp(-1.3 * tot));
+          continue;
+        }
+
+        const dz = Math.sqrt(1 - r2), dIn = (1 - r) * Rr;
+        const x1 = dx * cA + dz * sA, z1 = -dx * sA + dz * cA, y2 = dyv * cB - z1 * sB, z2 = dyv * sB + z1 * cB;
+        const e = -u * 2.2, eC = clamp(e);
+        const Ls = ss(-0.03, 0.4, e) * (0.4 + 0.6 * ss(0, 0.7, e)) * 0.85;
+        const wm = 1 - ss(0.02, 0.55, e);
+        const slg = lerp(0.93, 0.45, wm), slb = lerp(0.85, 0.18, wm);
+
+        // continents with domain-warped, fractal coastlines
+        const wp = n3(x1 * 2.3 + 4, y2 * 2.3, z2 * 2.3 + 9);
+        const lv = (fbm(x1 * 4.2 + wp * 1.1 + 3.1, y2 * 4.2 + wp * 1.1, z2 * 4.2, 6) - 0.5) * 2.4 + 0.5;
+        const isLand = lv > 0.5;
+        let ar, ag, ab;
+        const lm = ss(0.492, 0.518, lv);
+        if (lm > 0.001) {
+          const dry = ss(0.35, 0.7, fbm(x1 * 2.6 + 7, y2 * 2.6, z2 * 2.6, 4)), gr = n3(x1 * 9, y2 * 9, z2 * 9);
+          let lr = lerp(0.05, 0.13, gr), lg = lerp(0.1, 0.17, gr), lb = lerp(0.045, 0.07, gr);
+          lr = lerp(lr, 0.36, dry); lg = lerp(lg, 0.29, dry); lb = lerp(lb, 0.17, dry);
+          const ridge = 1 - Math.abs(2 * fbm(x1 * 6.5 + 2, y2 * 6.5, z2 * 6.5, 5) - 1);
+          const mt = ss(0.62, 0.86, ridge) * ss(0.55, 0.8, lv);
+          lr = lerp(lr, 0.3, mt); lg = lerp(lg, 0.28, mt); lb = lerp(lb, 0.26, mt);
+          const sn = ss(0.8, 0.97, mt); lr = lerp(lr, 0.8, sn); lg = lerp(lg, 0.82, sn); lb = lerp(lb, 0.86, sn);
+          const det = 0.75 + 0.5 * fbm(x1 * 38, y2 * 38, z2 * 38, 3);
+          lr *= det; lg *= det; lb *= det;
+          if (lm < 0.999) {
+            const tur = ss(0.34, 0.5, lv), od = 0.8 + 0.4 * fbm(x1 * 26, y2 * 26, z2 * 26, 2);
+            ar = lerp(lerp(0.006, 0.03, tur) * od, lr, lm); ag = lerp(lerp(0.02, 0.2, tur) * od, lg, lm); ab = lerp(lerp(0.06, 0.27, tur) * od, lb, lm);
+          } else { ar = lr; ag = lg; ab = lb; }
+        } else {
+          const tur = ss(0.34, 0.5, lv), od = 0.8 + 0.4 * fbm(x1 * 26, y2 * 26, z2 * 26, 2);
+          ar = lerp(0.006, 0.03, tur) * od; ag = lerp(0.02, 0.2, tur) * od; ab = lerp(0.06, 0.27, tur) * od;
+        }
+
+        // two-layer clouds, swirled, with shadows cast away from the sun
+        const cw = fbm(x1 * 1.9 + 11, y2 * 1.9, z2 * 1.9 + 5, 3);
+        const qx = x1 + 0.5 * (cw - 0.5), qy = y2 + 0.5 * (cw - 0.5);
+        const base = fbm(qx * 4.6, qy * 4.6, z2 * 4.6, 5);
+        const cov = ss(0.47, 0.64, base + (cw - 0.5) * 0.3);
+        let cl = 0, sh = 0;
+        if (cov > 0.001) cl = clamp(cov * (0.55 + 0.8 * fbm(qx * 17, qy * 17, z2 * 17, 3)));
+        if (e > 0.05 && Ls > 0.02) {
+          const off = 0.004 + 0.02 * (1 - eC);
+          sh = ss(0.5, 0.66, fbm((qx - off) * 4.6, qy * 4.6, z2 * 4.6, 4) + (cw - 0.5) * 0.3) * 0.62;
+        }
+
+        // surface lit by a warm, low sun
+        const k = 1 - sh;
+        let sr = ar * Ls * k, sg = ag * slg * Ls * k, sb = ab * slb * Ls * k;
+        if (lm < 0.98) {
+          const wat = 1 - lm;
+          const F = 0.03 + 0.97 * Math.pow(1 - dz, 5), sky = lerp(0.015, 0.28, dayA);
+          sr += wat * F * sky * 0.35 * (1 - cl); sg += wat * F * sky * 0.7 * (1 - cl); sb += wat * F * sky * 1.1 * (1 - cl);
+          const gl = wat * Math.pow(1 - dz, 3) * sunW * 0.55 * (1 - cl) * Math.min(1, Ls * 2);
+          sr += gl; sg += gl * 0.6; sb += gl * 0.32;
+        }
+        const cLr = 0.95 * Ls * (1 - 0.28 * cl * cl) + 0.016, cLg = 0.95 * slg * Ls * (1 - 0.28 * cl * cl) + 0.02, cLb = 0.95 * slb * Ls * (1 - 0.28 * cl * cl) + 0.034;
+        const ck = cl * 0.94;
+        sr = sr * (1 - ck) + cLr * ck; sg = sg * (1 - ck) + cLg * ck; sb = sb * (1 - ck) + cLb * ck;
+        // starlight on the night side, dusk blue and an orange line at the terminator
+        sr += 0.006 + ar * 0.05; sg += 0.009 + ag * 0.05; sb += 0.022 + ab * 0.1;
+        const tw = Math.exp(-Math.pow(Math.max(u, 0) / 0.2, 2)) * 0.5;
+        sr += 0.07 * tw * (0.4 + 0.6 * cl); sg += 0.1 * tw * (0.4 + 0.6 * cl); sb += 0.22 * tw * (0.4 + 0.6 * cl);
+        const tg = Math.exp(-Math.pow(u / 0.16, 2)) * (0.1 + 0.9 * cl) * 0.32 * (0.4 + 0.6 * (1 - dz));
+        sr += 0.55 * tg; sg += 0.22 * tg; sb += 0.08 * tg;
+
+        // city lights
+        const nf = ss(0.02, 0.4, u);
+        if (isLand && nf > 0.02 && dz > 0.07) {
+          const pop = fbm(x1 * 5.5 + wp, y2 * 5.5, z2 * 5.5, 4), cm = ss(0.52, 0.74, pop) * ss(0.5, 0.58, lv);
+          if (cm > 0.01) {
+            const dots = ss(0.72, 0.9, n3(x1 * 700, y2 * 700, z2 * 700)), fine = ss(0.6, 0.85, n3(x1 * 180, y2 * 180, z2 * 180));
+            const ci = nf * cm * (0.95 * dots + 0.35 * fine * cm + 0.1) * ss(0.07, 0.35, dz) * (1 - 0.75 * cl) * 1.5;
+            const wh = n3(x1 * 60, y2 * 60, z2 * 60) > 0.75 ? 0.5 : 0;
+            sr += ci; sg += ci * (0.74 + wh * 0.2); sb += ci * (0.4 + wh);
+          }
+        }
+
+        // atmosphere in front of the surface: bright and thin at the limb
+        const hz = Math.exp(-dIn / (0.012 * Rr)), hI = (0.14 + 0.9 * dayA + 0.55 * sunW) * 0.85;
+        const mA = 0.55 * Math.exp(-dIn / (0.0025 * Rr));
+        const hk = Math.min(0.92, hz * hI);
+        sr = sr * (1 - hk) + lerp(Br, Ar, mA) * hk; sg = sg * (1 - hk) + lerp(Bg, Ag, mA) * hk; sb = sb * (1 - hk) + lerp(Bb, Ab, mA) * hk;
+
+        D[i] = 255 * (1 - Math.exp(-1.3 * sr)); D[i + 1] = 255 * (1 - Math.exp(-1.3 * sg)); D[i + 2] = 255 * (1 - Math.exp(-1.3 * sb)); D[i + 3] = 255;
+      }
+    }
+    (function step() {
+      if (token !== built) return;
+      const t0 = performance.now();
+      while (py < eh && performance.now() - t0 < 10) row(py++);
+      if (py < eh) setTimeout(step, 0); else {
+        for (let yy = Math.floor(H * 1.2 * es); yy < eh; yy++) { const f = ss(H * 1.5, H * 1.2, yy / es); for (let xx = 0; xx < ew; xx++) { const i = (yy * ew + xx) * 4 + 3; D[i] = D[i] * f; } }
+        x.putImageData(img, 0, 0); done(c);
+      }
+    })();
+  }
+
+
+  /* ---------- deep space: nebulae and a dense star field (second screen) ---------- */
+  function buildDeepAsync(token, done) {
+    const k = 3, NH = Math.round(H * 1.25), offY = -H * 0.125;
+    const lw = Math.ceil(W / k), lh = Math.ceil(NH / k);
+    const c = mk(lw, lh), x = c.getContext('2d'), img = x.createImageData(lw, lh), D = img.data, dens = new Float32Array(lw * lh);
+    const s = 2.6 / G.Lg;
+    let y = 0;
+    function row(y) {
+      for (let xx = 0; xx < lw; xx++) {
+        const X = xx * k, Y = y * k + offY;
+        const macro = fbm(X * s * 0.8 + 9, Y * s * 0.8, 4.4, 3);
+        if (macro < 0.27) continue;
+        const w1 = fbm(X * s * 0.8 + 1.7, Y * s * 0.8, 5.1, 3), w2 = fbm(X * s * 0.8, Y * s * 0.8 + 3.3, 8.2, 3);
+        const qx = X * s + 1.7 * (w1 - 0.5), qy = Y * s + 1.7 * (w2 - 0.5);
+        const g = fbm(qx * 1.3, qy * 1.3, 2.0, 6);
+        const d = ss(0.4, 0.68, g) * ss(0.3, 0.5, macro);
+        if (d < 0.01) continue;
+        const dust = ss(0.56, 0.74, fbm(qx * 2.6 + 5, qy * 2.6, 6.3, 5));
+        const rid = 1 - Math.abs(2 * fbm(qx * 3.2, qy * 3.2, 9.9, 4) - 1);
+        const I = (0.5 * d + 0.9 * d * d + 0.45 * ss(0.8, 0.95, rid) * d) * (1 - 0.72 * dust);
+        const u = clamp(0.5 + (fbm(X * s * 1.5 + 3, Y * s * 1.5 + 7, 1.1, 2) - 0.5) * 6.5);
+        // teal -> indigo -> magenta -> amber, with warm cores
+        const P = [[0.05, 0.55, 0.82], [0.3, 0.3, 0.92], [0.78, 0.27, 0.64], [0.95, 0.52, 0.24]];
+        const f = u * 3, k0 = Math.min(2, Math.floor(f)), tt = f - k0, A0 = P[k0], A1 = P[k0 + 1];
+        let r = lerp(A0[0], A1[0], tt), gg = lerp(A0[1], A1[1], tt), b = lerp(A0[2], A1[2], tt);
+        const hot = ss(0.72, 0.92, g) * d;
+        r = lerp(r, 1.0, hot * 0.45); gg = lerp(gg, 0.7, hot * 0.45); b = lerp(b, 0.45, hot * 0.45);
+        const gain = 0.95 * I, i = (y * lw + xx) * 4;
+        D[i] = clamp(r * gain + hot * 0.12) * 255; D[i + 1] = clamp(gg * gain + hot * 0.09) * 255; D[i + 2] = clamp(b * gain + hot * 0.06) * 255; D[i + 3] = 255;
+        dens[y * lw + xx] = d;
+      }
+    }
+    (function step() {
+      if (token !== built) return;
+      const t0 = performance.now();
+      while (y < lh && performance.now() - t0 < 10) row(y++);
+      if (y < lh) { setTimeout(step, 0); return; }
+      x.putImageData(img, 0, 0); nebula = c;
+      // stars: thicker inside the gas, plus a tight cluster and a few large diffraction stars
+      const st = mk(Math.round(W * DPR), Math.round(NH * DPR)), q = st.getContext('2d'); q.scale(DPR, DPR);
+      const r = rng(99), cols = ['#ffffff', '#ffffff', '#dfe8ff', '#bcd0ff', '#fff1de', '#ffd9b0', '#ffc7a0'];
+      const N = Math.min(3200, Math.round(W * H / 750));
+      for (let n = 0, drawn = 0; n < N * 6 && drawn < N; n++) {
+        const X = r() * W, Y = r() * NH, dd = dens[Math.min(lh - 1, Math.floor(Y / k)) * lw + Math.min(lw - 1, Math.floor(X / k))];
+        if (r() > 0.28 + 0.9 * Math.sqrt(dd)) continue;
+        q.globalAlpha = 0.25 + Math.pow(r(), 1.5) * 0.75; q.fillStyle = cols[(r() * cols.length) | 0];
+        const sz = 0.4 + Math.pow(r(), 7) * 1.8; q.beginPath(); q.arc(X, Y, sz, 0, 6.2832); q.fill(); drawn++;
+      }
+      const cx = W * (0.68 + r() * 0.1), cy = NH * (0.34 + r() * 0.2);
+      for (let n = 0; n < 520; n++) {
+        const a = r() * 6.2832, rad = Math.pow(r(), 1.7) * Math.min(W, H) * 0.09;
+        q.globalAlpha = 0.2 + r() * 0.6; q.fillStyle = r() > 0.75 ? '#ffd9b0' : '#cfdcff'; q.fillRect(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad * 0.8, 0.9, 0.9);
+      }
+      q.globalAlpha = 1; q.globalCompositeOperation = 'lighter';
+      for (let n = 0; n < 12; n++) {
+        const X = r() * W, Y = r() * NH, sz = 8 + r() * 16, col = cols[(r() * cols.length) | 0];
+        const g = q.createRadialGradient(X, Y, 0, X, Y, sz); g.addColorStop(0, hexA(col, 0.95)); g.addColorStop(0.18, hexA(col, 0.3)); g.addColorStop(1, 'rgba(0,0,0,0)');
+        q.fillStyle = g; q.fillRect(X - sz, Y - sz, sz * 2, sz * 2);
+        q.strokeStyle = hexA(col, 0.4); q.lineWidth = 0.8; q.beginPath(); q.moveTo(X - sz * 2.6, Y); q.lineTo(X + sz * 2.6, Y); q.moveTo(X, Y - sz * 2.6); q.lineTo(X, Y + sz * 2.6); q.stroke();
+      }
+      deepStars = st; done();
+    })();
+  }
+
+  /* ---------- per-frame drawing ---------- */
+  function hexA(h, a) { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a.toFixed(3)})`; }
+  function drawStars(t) {
+    for (const s of stars) {
+      ctx.globalAlpha = s.a * (1 - s.tw + s.tw * (0.5 + 0.5 * Math.sin(t * s.sp + s.ph)));
+      ctx.fillStyle = s.c;
+      if (s.r < 0.9) ctx.fillRect(s.x - s.r, s.y - s.r, s.r * 2, s.r * 2);
+      else { ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.2832); ctx.fill(); }
+    }
+    ctx.globalAlpha = 1;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const b of bright) {
+      const a = b.a * (0.7 + 0.3 * Math.sin(t * b.sp + b.ph));
+      const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.s * 0.9);
+      g.addColorStop(0, hexA(b.c, a)); g.addColorStop(0.25, hexA(b.c, a * 0.25)); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(b.x - b.s, b.y - b.s, b.s * 2, b.s * 2);
+      ctx.strokeStyle = hexA(b.c, a * 0.18); ctx.lineWidth = 0.7;
+      ctx.beginPath(); ctx.moveTo(b.x - b.s * 1.4, b.y); ctx.lineTo(b.x + b.s * 1.4, b.y); ctx.moveTo(b.x, b.y - b.s * 1.4); ctx.lineTo(b.x, b.y + b.s * 1.4); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function spawn() {
+    const big = Math.random() < 0.22, dir = Math.random() < 0.5 ? -1 : 1, ang = (18 + Math.random() * 30) * Math.PI / 180;
+    shoots.push({ x: W * (dir < 0 ? 0.35 + Math.random() * 0.65 : Math.random() * 0.65), y: Math.random() * G.ys * 0.55, dx: dir * Math.cos(ang), dy: Math.sin(ang), speed: 800 + Math.random() * 700, age: 0, life: big ? 1.35 : 0.8 + Math.random() * 0.4, len: big ? 340 : 140 + Math.random() * 130, w: big ? 2.1 : 1.3 });
+  }
+  let nextSpawn = 1.6;
+  function drawShoots(dt, t) {
+    if (t > nextSpawn) { spawn(); if (Math.random() < 0.18) setTimeout(spawn, 220 + Math.random() * 300); nextSpawn = t + 2.2 + Math.random() * 4.6; }
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+    for (let i = shoots.length - 1; i >= 0; i--) {
+      const s = shoots[i]; s.age += dt;
+      const p = s.age / s.life; if (p >= 1) { shoots.splice(i, 1); continue; }
+      const hx = s.x + s.dx * s.speed * s.age, hy = s.y + s.dy * s.speed * s.age;
+      const a = p < 0.12 ? p / 0.12 : 1 - ss(0.5, 1, p), tl = s.len * Math.min(1, s.age / 0.18) * (1 - 0.5 * ss(0.6, 1, p));
+      const tx = hx - s.dx * tl, ty = hy - s.dy * tl, g = ctx.createLinearGradient(tx, ty, hx, hy);
+      g.addColorStop(0, 'rgba(170,195,255,0)'); g.addColorStop(0.65, `rgba(190,208,255,${(0.32 * a).toFixed(3)})`); g.addColorStop(1, `rgba(255,255,255,${a.toFixed(3)})`);
+      ctx.strokeStyle = g; ctx.lineWidth = s.w; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy); ctx.stroke();
+      ctx.lineWidth = s.w * 4; ctx.globalAlpha = 0.16; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy); ctx.stroke(); ctx.globalAlpha = 1;
+      const hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, 9);
+      hg.addColorStop(0, `rgba(255,255,255,${a.toFixed(3)})`); hg.addColorStop(0.3, `rgba(190,210,255,${(a * 0.4).toFixed(3)})`); hg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = hg; ctx.fillRect(hx - 9, hy - 9, 18, 18);
+    }
+    ctx.restore();
+  }
+
+  function sunGlow(i, rise) {
+    const { xs, ys, Lg } = G;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(xs, ys - 1);
+    ctx.save(); ctx.scale(1, 0.4);
+    let r = Lg * 0.3, g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+    g.addColorStop(0, `rgba(255,190,130,${0.34 * i})`); g.addColorStop(0.1, `rgba(255,140,80,${0.18 * i})`); g.addColorStop(0.35, `rgba(100,115,205,${0.05 * i})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(-r, -r, 2 * r, 2 * r); ctx.restore();
+    ctx.save(); ctx.scale(1, 0.03); r = Lg * 0.5; g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+    g.addColorStop(0, `rgba(255,210,165,${0.5 * i})`); g.addColorStop(0.25, `rgba(255,150,95,${0.18 * i})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(-r, -r, 2 * r, 2 * r); ctx.restore();
+    ctx.restore();
+    // the sun itself: clipped to the sky so it climbs out from behind the planet
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    ctx.beginPath(); ctx.rect(-50, -4000, W + 100, 4000 + H * 2); ctx.arc(G.cx, G.cy, G.R, 0, 6.2832); ctx.clip('evenodd');
+    ctx.translate(xs, ys - 1 + (1 - rise) * Lg * 0.045);
+    const r2 = Lg * 0.016, ci = i * (0.2 + 0.8 * rise), g2 = ctx.createRadialGradient(0, 0, 0, 0, 0, r2);
+    g2.addColorStop(0, `rgba(255,248,236,${0.95 * ci})`); g2.addColorStop(0.4, `rgba(255,205,150,${0.4 * ci})`); g2.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g2; ctx.fillRect(-r2, -r2, 2 * r2, 2 * r2);
+    ctx.restore();
+  }
+
+  // Earth with a pre-dawn shade that retreats from the sun as it rises
+  function drawEarthImg(img, alpha, rise) {
+    if (alpha <= 0.002) return;
+    ctx.globalAlpha = alpha;
+    if (rise < 0.999) {
+      if (!shadeC || shadeC.width !== img.width || shadeC.height !== img.height) shadeC = mk(img.width, img.height);
+      const sx = shadeC.getContext('2d'), k = img.width / W;
+      sx.globalCompositeOperation = 'source-over'; sx.clearRect(0, 0, shadeC.width, shadeC.height); sx.drawImage(img, 0, 0);
+      sx.globalCompositeOperation = 'source-atop';
+      const rad = G.Lg * (0.06 + 1.35 * rise) * k, g = sx.createRadialGradient(G.xs * k, G.ys * k, 0, G.xs * k, G.ys * k, rad);
+      g.addColorStop(0, 'rgba(2,3,10,0)'); g.addColorStop(0.45, 'rgba(2,3,10,0.2)'); g.addColorStop(1, 'rgba(2,3,10,0.92)');
+      sx.fillStyle = g; sx.fillRect(0, 0, shadeC.width, shadeC.height);
+      ctx.drawImage(shadeC, 0, 0, W, H * 1.5);
+    } else ctx.drawImage(img, 0, 0, W, H * 1.5);
+    ctx.globalAlpha = 1;
+  }
+
+  // zoom runs from 0.2 to 2.2 screens of scroll; the wordmark appears once it is maxed out
+  const zoomProg = () => clamp((sy - H * 0.2) / (H * 2.0));
+  function setWordmark() { document.documentElement.style.setProperty('--wm', clamp((sy - H * 2.2) / (H * 0.35)).toFixed(3)); }
+
+  function render(t, dt = 0) {
+    if (!bg || !vig) return;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.imageSmoothingQuality = 'high';
+    ctx.fillStyle = '#02030a'; ctx.fillRect(0, 0, W, H);
+    ctx.drawImage(bg, 0, 0, W, H); drawStars(t); if (!reduce) drawShoots(dt, t);
+    if (sy < H * 1.1) { ctx.save(); ctx.translate(0, -sy * 0.7); ctx.drawImage(moonC, 0, 0, W, H); ctx.restore(); }
+    const dp = ss(H * 0.12, H * 1.4, sy), prog = zoomProg();
+    if (nebula && deepStars && dp > 0.002) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = dp;
+      const lift = (1 - dp) * H * 0.05;
+      ctx.save(); ctx.translate(W / 2, H / 2 + lift); const z = 1 + 0.22 * prog; ctx.scale(z, z); ctx.translate(-W / 2, -H / 2 - H * 0.125);
+      ctx.drawImage(nebula, 0, 0, W, H * 1.25); ctx.restore();
+      ctx.save(); ctx.translate(W / 2, H / 2 + lift); const z2 = 1 + 0.5 * prog; ctx.scale(z2, z2); ctx.translate(-W / 2, -H / 2 - H * 0.125);
+      ctx.drawImage(deepStars, 0, 0, W, H * 1.25); ctx.restore();
+      ctx.restore(); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
+    const eImg = earth || earthLo;
+    if (eImg && sy < H * 0.95) {
+      const now = performance.now(), el = reduce ? 99 : (now - tReady) / 1000;
+      const ef = 1 - ss(H * 0.15, H * 0.9, sy), rise = reduce ? 1 : ss(0, 1, (el - 0.5) / 8), fin = reduce ? 1 : Math.min(1, el / 0.5);
+      ctx.save(); ctx.translate(0, -sy);
+      const ag = ctx.createRadialGradient(G.xs, G.ys, 0, G.xs, G.ys, G.Lg * 0.7);
+      ag.addColorStop(0, 'rgba(60,70,150,0.2)'); ag.addColorStop(0.5, 'rgba(24,32,84,0.08)'); ag.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.globalAlpha = fin * ef * (0.3 + 0.7 * rise); ctx.fillStyle = ag; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+      if (earth && earthLo) { const mixHi = reduce ? 1 : ss(0, 0.8, (now - tHi) / 1000); drawEarthImg(earthLo, fin * ef * (1 - mixHi), rise); drawEarthImg(earth, fin * ef * mixHi, rise); }
+      else drawEarthImg(eImg, fin * ef, rise);
+      sunGlow(Math.pow(rise, 1.4) * (0.94 + 0.06 * Math.sin(t * 0.5)) * ef, rise);
+      ctx.restore();
+    }
+    ctx.drawImage(vig, 0, 0, W, H);
+  }
+
+  let last = 0;
+  function loop(ts) { const t = ts / 1000, dt = Math.min(0.05, t - last); last = t; render(t, dt); requestAnimationFrame(loop); }
+
+  build();
+  addEventListener('scroll', () => { sy = window.scrollY || document.documentElement.scrollTop || 0; setWordmark(); if (reduce) render(99); }, { passive: true });
+  if (reduce) render(0); else requestAnimationFrame(loop);
+  let rt;
+  addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { build(); if (reduce) render(0); }, 200); });
+  window.__sky = { get ready() { return !!earth; } };
+})();
+</script>
+<script>
+(() => {
+  'use strict';
+
+  /* =====================================================================
+     CONFIG: paste your Supabase project values here.
+     Leave them empty and the page runs in preview mode (data stays in this
+     browser). Run supabase-setup.sql in the Supabase SQL editor first.
+     ===================================================================== */
+  const CONFIG = {
+    SUPABASE_URL: '',          // e.g. 'https://abcdxyz.supabase.co'
+    SUPABASE_ANON_KEY: '',     // the "anon public" key (safe to ship in the browser)
+    VORO_CHAT_FUNCTION: '',    // optional: name of a Supabase Edge Function that answers chat. Empty = built-in scripted replies.
+  };
+
+  // Early-access tiers (edit the names and perks freely). `need` = friends who joined with your link.
+  const TIERS = [
+    { name: 'Explorer', need: 0, perk: 'A place on the list' },
+    { name: 'Pioneer', need: 3, perk: 'Earlier access wave' },
+    { name: 'Founding member', need: 10, perk: 'Founding badge and a direct line to the team' },
+  ];
+
+  const PROMPTS = [
+    'What is one task you would happily never do again?',
+    'Which part of your week feels like admin instead of work?',
+    'If a business ran itself, what would yours sell?',
+    'What did you almost start this year and talk yourself out of?',
+    'Who is one customer you would love to hear from tomorrow?',
+    'What decision keeps coming back to your desk?',
+    'What would you build if nobody could judge it?',
+    'Which tool do you open every day and still dislike?',
+    'What is the smallest version of your idea you could test this week?',
+    'What would a perfect Monday morning brief say?',
+    'What are you doing by hand that a checklist could do?',
+    'What would you hand to an assistant first?',
+    'What did a customer ask you for twice?',
+    'What is the one thing you are least sure about right now?',
+  ];
+
+  /* ---------- tiny helpers ---------- */
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
+
+  const mem = {};
+  const store = {
+    get(k) { try { const v = localStorage.getItem(k); return v == null ? (mem[k] ?? null) : v; } catch (e) { return mem[k] ?? null; } },
+    set(k, v) { mem[k] = v; try { localStorage.setItem(k, v); } catch (e) { /* storage unavailable */ } },
+    del(k) { delete mem[k]; try { localStorage.removeItem(k); } catch (e) { /* ignore */ } },
+  };
+  const jget = (k, d) => { try { const v = store.get(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const jset = (k, v) => store.set(k, JSON.stringify(v));
+
+  const dstr = (d) => d.toLocaleDateString('en-CA');
+  const today = () => dstr(new Date());
+  const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dstr(d); };
+  const dayOfYear = () => { const n = new Date(), s = new Date(n.getFullYear(), 0, 0); return Math.floor((n - s) / 864e5); };
+  const hash = (s) => { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const makeCode = () => Math.random().toString(36).slice(2, 10);
+  const tz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; } };
+
+  function toast(msg, action) {
+    const box = $('#toasts'), t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = `<span>${esc(msg)}</span>`;
+    if (action) { const b = document.createElement('button'); b.type = 'button'; b.textContent = action.label; b.addEventListener('click', () => { action.run(); t.remove(); }); t.append(b); }
+    box.append(t);
+    setTimeout(() => t.remove(), action ? 9000 : 4200);
+  }
+
+  /* =====================================================================
+     Backend adapter: Supabase when configured, local preview otherwise
+     ===================================================================== */
+  let sb = null;
+  const LIVE_CONFIGURED = !!(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY);
+  const live = () => !!sb;
+  const loadScript = (src) => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+
+  async function initBackend() {
+    if (!LIVE_CONFIGURED) return;
+    try {
+      await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js');
+      sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+    } catch (e) { console.warn('Supabase could not load. Running in preview mode.'); sb = null; }
+  }
+  const getRef = () => {
+    try { const r = new URLSearchParams(location.search).get('ref'); if (r) store.set('nv:ref', r.slice(0, 32)); } catch (e) { /* ignore */ }
+    return store.get('nv:ref') || null;
+  };
+
+  const demo = { get: () => jget('nv:demo', {}), set: (o) => jset('nv:demo', o) };
+  function demoEnsure(email, name) {
+    const d = demo.get();
+    d.email = email; if (name) d.name = name;
+    d.code = d.code || makeCode(); d.joinedAt = d.joinedAt || Date.now();
+    d.pos = d.pos || (120 + hash(email) % 780);
+    d.ideas = d.ideas || []; d.streak = d.streak || 0; d.longest = d.longest || 0; d.referrals = d.referrals || 0;
+    if (d.digest === undefined) d.digest = true;
+    demo.set(d); return d;
+  }
+  function demoStatus() {
+    const d = demo.get(), chats = jget('nv:chat', []).filter((m) => m.role === 'user').length;
+    return { email: d.email, name: d.name || '', position: d.pos, total: null, referral_code: d.code, referrals: d.referrals || 0, streak: d.streak || 0, longest_streak: d.longest || 0, last_checkin: d.last || null, digest: d.digest !== false, joined_at: d.joinedAt, idea_count: (d.ideas || []).length, chat_count: chats };
+  }
+
+  const api = {
+    async join(p) {
+      if (live()) {
+        const { data, error } = await sb.rpc('join_waitlist', { p_email: p.email, p_name: p.name, p_role: p.role || null, p_team_size: p.team || null, p_interests: p.interests, p_use_case: p.useCase || null, p_marketing_ok: p.marketing, p_ref: getRef(), p_source: (document.referrer || '').slice(0, 120) || null });
+        if (error) throw error; return data;
+      }
+      await sleep(500);
+      const d = demoEnsure(p.email, p.name); d.role = p.role; d.team = p.team; d.interests = p.interests; d.useCase = p.useCase; demo.set(d);
+      return { referral_code: d.code, position: d.pos, referrals: d.referrals };
+    },
+    async sendLink(email) {
+      const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href.split('#')[0], shouldCreateUser: true } });
+      if (error) throw error;
+    },
+    async demoSignIn(email) { const d = demoEnsure(email); d.signedIn = true; demo.set(d); },
+    async signOut() { if (live()) await sb.auth.signOut(); else { const d = demo.get(); d.signedIn = false; demo.set(d); } },
+    async status() {
+      if (live()) { const { data, error } = await sb.rpc('my_status'); if (error) throw error; return data; }
+      return demoStatus();
+    },
+    async checkIn() {
+      if (live()) { const { data, error } = await sb.rpc('check_in', { p_tz: tz() }); if (error) throw error; return data; }
+      const d = demo.get(), t = today();
+      if (d.last !== t) { d.streak = d.last === yesterday() ? (d.streak || 0) + 1 : 1; d.longest = Math.max(d.longest || 0, d.streak); d.last = t; demo.set(d); }
+      return demoStatus();
+    },
+    async setDigest(on) { if (live()) { const { error } = await sb.rpc('set_digest', { p_on: on }); if (error) throw error; } else { const d = demo.get(); d.digest = on; demo.set(d); } },
+    async ideasList() {
+      if (live()) { const { data, error } = await sb.from('ideas').select('id,body,created_at').order('created_at', { ascending: false }).limit(50); if (error) throw error; return data || []; }
+      return (demo.get().ideas || []).slice().sort((a, b) => b.created_at - a.created_at);
+    },
+    async ideaAdd(body) {
+      if (live()) { const { data, error } = await sb.from('ideas').insert({ body }).select('id,body,created_at').single(); if (error) throw error; return data; }
+      const d = demo.get(); d.ideas = d.ideas || []; const it = { id: 'i' + Date.now(), body, created_at: Date.now() }; d.ideas.push(it); demo.set(d); return it;
+    },
+    async ideaDel(id) {
+      if (live()) { const { error } = await sb.from('ideas').delete().eq('id', id); if (error) throw error; return; }
+      const d = demo.get(); d.ideas = (d.ideas || []).filter((i) => i.id !== id); demo.set(d);
+    },
+    async chatList() {
+      if (live()) { const { data, error } = await sb.from('chat_messages').select('role,content').order('created_at', { ascending: true }).limit(40); if (error) throw error; return data || []; }
+      return jget('nv:chat', []);
+    },
+    async chatAdd(role, content) { if (live()) { await sb.from('chat_messages').insert({ role, content }); } },
+    async voro(messages) {
+      if (live() && CONFIG.VORO_CHAT_FUNCTION) {
+        const { data, error } = await sb.functions.invoke(CONFIG.VORO_CHAT_FUNCTION, { body: { messages } });
+        if (error) throw error; return data && data.reply;
+      }
+      return null;
+    },
+  };
+
+  /* =====================================================================
+     App state
+     ===================================================================== */
+  const S = { user: null, status: null, ideas: [], chat: [], joined: store.get('nv:joined'), welcomed: false, busyChat: false };
+  const firstName = (st) => (st.name || (st.email || '').split('@')[0] || 'there').split(' ')[0];
+  const effStreak = (st) => (st.last_checkin === today() || st.last_checkin === yesterday()) ? (st.streak || 0) : 0;
+
+  async function refresh() {
+    try { S.status = await api.status(); } catch (e) { console.warn(e); toast('We could not load your launch pad. Try again in a moment.'); return; }
+    try { S.ideas = await api.ideasList(); } catch (e) { S.ideas = []; }
+    if (live()) { try { const rows = await api.chatList(); if (rows.length) { S.chat = rows; jset('nv:chat', rows.slice(-40)); } } catch (e) { /* keep local */ } }
+  }
+  async function setUser(email, fresh) {
+    S.user = email;
+    if (email) {
+      S.joined = S.joined || email; store.set('nv:joined', S.joined);
+      await refresh();
+      if (fresh) { openPad(); toast('You are signed in. Welcome to your launch pad.'); }
+      else if (!S.welcomed && S.status) {
+        S.welcomed = true;
+        if (S.status.last_checkin !== today()) setTimeout(() => toast(`Welcome back, ${firstName(S.status)}. Check in to keep your streak.`, { label: 'Open', run: openPad }), 1800);
+      }
+    } else { S.status = null; S.ideas = []; }
+    updateChrome();
+  }
+  async function bootAuth() {
+    await initBackend();
+    $('#demoNote').hidden = live();
+    $('#chatSub').textContent = live() && CONFIG.VORO_CHAT_FUNCTION ? 'Online' : 'Preview · scripted replies';
+    if (live()) {
+      const { data } = await sb.auth.getSession();
+      await setUser(data.session && data.session.user ? data.session.user.email : null, false);
+      sb.auth.onAuthStateChange((ev, session) => { setTimeout(() => setUser(session && session.user ? session.user.email : null, ev === 'SIGNED_IN' && !S.user), 0); });
+    } else {
+      const d = demo.get(); if (d.signedIn && d.email) await setUser(d.email, false);
+    }
+    updateChrome();
+  }
+  function updateChrome() {
+    $('#signinBtn').hidden = !!S.user; $('#padBtn').hidden = !S.user;
+    const lbl = S.user ? 'Open your launch pad' : (S.joined ? "You're on the list" : 'Join the waitlist');
+    $$('.js-join span').forEach((el) => { el.textContent = lbl; });
+  }
+
+  /* =====================================================================
+     Modal
+     ===================================================================== */
+  const M = {
+    el: $('#modal'), box: $('#modal .modal'), prev: null,
+    open(view) { M.prev = document.activeElement; M.el.hidden = false; document.body.classList.add('lock'); M.view(view || 'join'); },
+    close() { M.el.hidden = true; document.body.classList.remove('lock'); if (M.prev && M.prev.focus) M.prev.focus(); },
+    view(v) {
+      $$('[data-view]', M.box).forEach((n) => { n.hidden = n.dataset.view !== v; });
+      M.box.scrollTop = 0;
+      const cur = $(`[data-view="${v}"]`, M.box);
+      setTimeout(() => { (cur.querySelector('input:not([type=checkbox]):not([readonly]), button.cta') || M.box).focus({ preventScroll: true }); }, 40);
+    },
+  };
+  M.el.addEventListener('mousedown', (e) => { if (e.target === M.el) M.close(); });
+  $('#mClose').addEventListener('click', () => M.close());
+
+  function onJoinClick() {
+    if (S.user) openPad();
+    else if (S.joined) { $('#si-email').value = S.joined; M.open('signin'); }
+    else M.open('join');
+  }
+
+  const friendly = (ex) => /invalid_email/.test((ex && (ex.message || ex.details)) || '') ? 'That email address does not look right.' : 'We could not save that just now. Check your connection and try again.';
+  const inviteLink = (code) => `${location.origin}${location.pathname}?ref=${code}`;
+
+  $('#joinForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = $('#jErr'), btn = $('#jSubmit'); err.textContent = '';
+    $$('#joinForm input').forEach((i) => i.removeAttribute('aria-invalid'));
+    const name = $('#f-name').value.trim(), email = $('#f-email').value.trim().toLowerCase();
+    if (name.length < 2) { err.textContent = 'Add your name so we know who to welcome.'; $('#f-name').setAttribute('aria-invalid', 'true'); $('#f-name').focus(); return; }
+    if (!EMAIL.test(email)) { err.textContent = 'Enter a valid email address, like you@company.com.'; $('#f-email').setAttribute('aria-invalid', 'true'); $('#f-email').focus(); return; }
+    const payload = { name, email, role: $('#f-role').value, team: $('#f-team').value, interests: $$('input[name=interest]:checked').map((i) => i.value), useCase: $('#f-use').value.trim(), marketing: $('#f-mkt').checked };
+    btn.disabled = true; btn.firstElementChild.textContent = 'Joining...';
+    try {
+      const r = await api.join(payload);
+      S.joined = email; store.set('nv:joined', email);
+      $('#sSub').textContent = `Thanks, ${name.split(' ')[0]}. We will email you at ${email} when your wave opens.`;
+      $('#sPos').textContent = '#' + (r.position != null ? r.position : '—');
+      $('#sPrev').hidden = live();
+      $('#sLink').value = inviteLink(r.referral_code);
+      $('#sPadLbl').textContent = live() ? 'Email me a sign-in link' : 'Open your launch pad';
+      updateChrome(); M.view('success');
+    } catch (ex) { console.warn(ex); err.textContent = friendly(ex); }
+    finally { btn.disabled = false; btn.firstElementChild.textContent = 'Join the waitlist'; }
+  });
+
+  async function copyText(text, input) {
+    try { await navigator.clipboard.writeText(text); toast('Copied.'); }
+    catch (e) { if (input) { input.focus(); input.select(); } toast('Press Ctrl+C or Cmd+C to copy.'); }
+  }
+  $('#sCopy').addEventListener('click', () => copyText($('#sLink').value, $('#sLink')));
+  $('#sLink').addEventListener('focus', (e) => e.target.select());
+
+  async function startSignIn(email, errEl, btn, labelEl) {
+    if (live()) {
+      btn.disabled = true; const old = labelEl.textContent; labelEl.textContent = 'Sending...';
+      try { await api.sendLink(email); $('#sentTo').textContent = email; M.view('sent'); }
+      catch (ex) { console.warn(ex); if (errEl) errEl.textContent = 'We could not send the link. Check the address and try again.'; }
+      finally { btn.disabled = false; labelEl.textContent = old; }
+    } else {
+      await api.demoSignIn(email); S.joined = email; store.set('nv:joined', email);
+      M.close(); await setUser(email, false); openPad();
+    }
+  }
+  $('#sPad').addEventListener('click', () => startSignIn(S.joined, null, $('#sPad'), $('#sPadLbl')));
+  $('#signinForm').addEventListener('submit', (e) => {
+    e.preventDefault(); const err = $('#siErr'); err.textContent = '';
+    const email = $('#si-email').value.trim().toLowerCase();
+    if (!EMAIL.test(email)) { err.textContent = 'Enter the email you joined with.'; $('#si-email').setAttribute('aria-invalid', 'true'); return; }
+    startSignIn(email, err, $('#siSubmit'), $('#siLbl'));
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!M.el.hidden) M.close(); else if (padOpen) closePad(); else if (!$('#chat').hidden) closeChat();
+    }
+    if (e.key === 'Tab' && !M.el.hidden) {
+      const f = $$('a[href],button:not([disabled]),input:not([disabled]),select,textarea,[tabindex]:not([tabindex="-1"])', M.box).filter((n) => n.offsetParent !== null);
+      if (!f.length) return; const a = f[0], z = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
+      else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+    }
+  });
+
+  /* =====================================================================
+     Launch pad (members area)
+     ===================================================================== */
+  let padOpen = false, padPrev = null;
+  const pad = $('#pad'), padBody = $('#padBody'), scrim = $('#padScrim');
+  function openPad() {
+    if (!S.user) { M.open('signin'); return; }
+    closeChat(); padPrev = document.activeElement; padOpen = true;
+    renderPad(); scrim.hidden = false; pad.setAttribute('aria-hidden', 'false'); document.body.classList.add('lock');
+    requestAnimationFrame(() => pad.classList.add('open'));
+    setTimeout(() => { const x = $('.pad .x', pad); x && x.focus({ preventScroll: true }); }, 60);
+    refresh().then(() => { if (padOpen) renderPad(true); });
+  }
+  function closePad() {
+    padOpen = false; pad.classList.remove('open'); pad.setAttribute('aria-hidden', 'true'); scrim.hidden = true; document.body.classList.remove('lock');
+    if (padPrev && padPrev.focus) padPrev.focus();
+  }
+  scrim.addEventListener('click', closePad);
+
+  function renderPad(keepScroll) {
+    const st = S.status; if (!st) return;
+    const y = pad.scrollTop;
+    const refs = st.referrals || 0, streak = effStreak(st), checked = st.last_checkin === today();
+    const tier = TIERS.filter((t) => refs >= t.need).pop(), next = TIERS.find((t) => refs < t.need);
+    const prev = [...TIERS].reverse().find((t) => refs >= t.need);
+    const pct = next ? Math.round(((refs - prev.need) / (next.need - prev.need)) * 100) : 100;
+    const link = inviteLink(st.referral_code), prompt = PROMPTS[dayOfYear() % PROMPTS.length];
+    const items = [
+      { t: 'Join the waitlist', on: true },
+      { t: 'Invite a friend', on: refs >= 1 },
+      { t: 'Save your first idea', on: (st.idea_count || S.ideas.length) >= 1 },
+      { t: 'Ask Voro something', on: (st.chat_count || 0) >= 1 },
+      { t: 'Turn on the weekly digest', on: !!st.digest },
+      { t: 'Reach a 3-day streak', on: Math.max(streak, st.longest_streak || 0) >= 3 },
+    ];
+    const done = items.filter((i) => i.on).length;
+    const badges = [
+      { t: 'First idea', on: (st.idea_count || S.ideas.length) >= 1 }, { t: 'Connector', on: refs >= 1 },
+      { t: 'Night owl', on: Math.max(streak, st.longest_streak || 0) >= 3 }, { t: 'Regular', on: Math.max(streak, st.longest_streak || 0) >= 7 },
+    ];
+    const dots = Array.from({ length: 7 }, (_, i) => `<i class="${i < Math.min(streak, 7) ? 'on' : ''}"></i>`).join('');
+    const ideas = S.ideas.map((i) => `<li><span>${esc(i.body)}</span><button type="button" data-action="delidea" data-id="${esc(i.id)}" aria-label="Delete idea">${icon('i-close')}</button></li>`).join('');
+    const ideaDraft = ($('#ideaIn') || {}).value || '';
+
+    padBody.innerHTML = `
+      <div class="pad-head"><div><h3>Hello, ${esc(firstName(st))}</h3><p>${esc(st.email || '')}${live() ? '' : ' · preview data'}</p></div><button class="x" type="button" data-action="closepad" aria-label="Close launch pad">${icon('i-close')}</button></div>
+
+      <section class="pcard" aria-label="Your place in line">
+        <h4>Your place in line${live() ? '' : '<span class="chip-prev">Preview</span>'}</h4>
+        <div class="big">#${esc(st.position != null ? st.position : '—')}${st.total ? `<small>of ${esc(st.total)}</small>` : ''}</div>
+        <div class="tier"><span><b>${esc(tier.name)}</b> · ${esc(tier.perk)}</span></div>
+        <div class="meter" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+        <p class="tiny">${next ? `${next.need - refs} more friend${next.need - refs === 1 ? '' : 's'} to reach ${esc(next.name)}.` : 'You have reached the top tier.'} ${refs} joined with your link.</p>
+        <div class="copyrow"><input id="padLink" type="text" readonly value="${esc(link)}" aria-label="Your invite link"><button class="ghost" type="button" data-action="copylink">Copy</button></div>
+      </section>
+
+      <section class="pcard" aria-label="Daily check-in">
+        <h4>Daily check-in <span>${icon('i-moon')}</span></h4>
+        <div class="streak-row"><div class="big">${streak}<small>day${streak === 1 ? '' : 's'}</small></div><button class="cta small${checked ? '' : ' solid'}" type="button" data-action="checkin" ${checked ? 'disabled' : ''}>${checked ? 'Checked in today' : 'Check in'}</button></div>
+        <div class="dots" aria-hidden="true">${dots}</div>
+        <p class="tiny">${checked ? 'Nice. Come back tomorrow to keep it going.' : (streak ? 'Check in today to keep your streak alive.' : 'Check in each day to start a streak.')} Longest: ${st.longest_streak || 0}.</p>
+      </section>
+
+      <section class="pcard" aria-label="Idea Vault">
+        <h4>Tonight's prompt</h4>
+        <p class="prompt">${esc(prompt)}</p>
+        <label class="sr" for="ideaIn">Your idea</label>
+        <textarea id="ideaIn" maxlength="600" placeholder="Write it down before you sleep...">${esc(ideaDraft)}</textarea>
+        <div class="row-end"><span class="tiny">${S.ideas.length} saved in your Idea Vault</span><button class="cta small solid" type="button" data-action="saveidea">Save idea</button></div>
+        ${ideas ? `<ul class="vault">${ideas}</ul>` : ''}
+      </section>
+
+      <section class="pcard" aria-label="Get ready">
+        <h4>Get ready <span>${done} of ${items.length}</span></h4>
+        <div class="meter"><i style="width:${Math.round(done / items.length * 100)}%"></i></div>
+        <ul class="checklist">${items.map((i) => `<li class="${i.on ? 'on' : ''}"><span class="tick">${icon('i-check')}</span>${esc(i.t)}</li>`).join('')}</ul>
+        <div class="badges" style="margin-top:14px">${badges.map((b) => `<span class="badge ${b.on ? 'on' : ''}">${esc(b.t)}</span>`).join('')}</div>
+      </section>
+
+      <section class="pcard" aria-label="Settings">
+        <h4>Settings</h4>
+        <div class="set-row"><span>Weekly digest of new features and tips</span><label class="switch"><span class="sr">Weekly digest</span><input type="checkbox" id="digest" ${st.digest ? 'checked' : ''}><span></span></label></div>
+        <div class="row-end" style="margin-top:16px"><button class="ghost" type="button" data-action="openchat">Ask Voro</button><button class="linkbtn" type="button" data-action="signout">Sign out</button></div>
+      </section>`;
+    if (keepScroll) pad.scrollTop = y;
+  }
+
+  padBody.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-action]'); if (!b) return; const a = b.dataset.action;
+    if (a === 'closepad') closePad();
+    else if (a === 'copylink') copyText($('#padLink').value, $('#padLink'));
+    else if (a === 'checkin') {
+      b.disabled = true;
+      try { S.status = await api.checkIn(); $$('.toast').forEach((t) => t.remove()); renderPad(true); toast(`Day ${effStreak(S.status)}. See you tomorrow.`); } catch (ex) { console.warn(ex); toast('Check-in did not go through. Try again.'); b.disabled = false; }
+    }
+    else if (a === 'saveidea') { const v = $('#ideaIn').value.trim(); if (v) await saveIdea(v, true); else $('#ideaIn').focus(); }
+    else if (a === 'delidea') { try { await api.ideaDel(b.dataset.id); S.ideas = S.ideas.filter((i) => String(i.id) !== b.dataset.id); if (S.status) S.status.idea_count = S.ideas.length; renderPad(true); } catch (ex) { toast('Could not delete that idea.'); } }
+    else if (a === 'openchat') { closePad(); openChat(); }
+    else if (a === 'signout') { await api.signOut(); closePad(); await setUser(null); if (!live()) { /* preview */ } toast('Signed out.'); }
+  });
+  padBody.addEventListener('change', async (e) => {
+    if (e.target.id === 'digest') { try { await api.setDigest(e.target.checked); S.status.digest = e.target.checked; renderPad(true); toast(e.target.checked ? 'Weekly digest is on.' : 'Weekly digest is off.'); } catch (ex) { toast('Could not update that setting.'); e.target.checked = !e.target.checked; } }
+  });
+
+  async function saveIdea(text, fromPad) {
+    if (!S.user) { toast('Sign in to save ideas to your Idea Vault.', { label: 'Sign in', run: () => M.open('signin') }); return false; }
+    try {
+      const it = await api.ideaAdd(text.slice(0, 600)); S.ideas.unshift(it); if (S.status) S.status.idea_count = S.ideas.length;
+      if (fromPad) { const t = $('#ideaIn'); if (t) t.value = ''; }
+      if (padOpen) renderPad(true); toast('Saved to your Idea Vault.'); return true;
+    } catch (ex) { console.warn(ex); toast('Could not save that idea. Try again.'); return false; }
+  }
+
+  /* =====================================================================
+     Voro AI chat
+     ===================================================================== */
+  const chat = $('#chat'), msgs = $('#msgs'), chatIn = $('#chatIn'), fab = $('#chatFab');
+  const GREETING = "Hi, I'm Voro. Tell me an idea and I'll show you how Notevoro will take it from the first thought to the finished result.";
+  const SUGGEST = ['Turn my idea into a plan', 'What can agents do?', 'How is Notevoro different?', 'When can I get in?'];
+
+  const clean = (t) => t.replace(/^(hey|hi|hello)[,!\s]+/i, '').replace(/^(i (want|would like|plan|need) to|i'?m (going to|building|starting|working on)|i have an idea( for| to)?|my idea is( to)?|help me( to)?|can you help me( to)?)\s+/i, '').replace(/[.!?\s]+$/, '').trim();
+  const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+  function planFor(raw) {
+    const idea = clean(raw) || raw.trim(), title = cap(idea.length > 58 ? idea.slice(0, 55).replace(/\s+\S*$/, '') + '...' : idea);
+    const short = cap(idea.split(/\s+/).slice(0, 3).join(' ').replace(/[,.;:]+$/, ''));
+    return `Here is how Notevoro will set up “${title}”.\n\nWorkspace: a “${short}” space with Brief, Research, Launch plan and Customers pages, already linked.\n\nWorkflow: when a lead or message arrives, Voro sorts it, drafts a reply and queues it for your approval.\n\nAgents: Scout researches the market, Scribe drafts content and outreach, Ledger tracks the numbers.\n\nTonight: write down the one thing you are least sure about. Scout will have notes waiting in your morning brief.\n\nWant me to keep this in your Idea Vault?`;
+  }
+  const KB = [
+    [/^\s*(hi|hello|hey|namaste|yo)\b[\s!.]*$/i, () => "Hello. What are you building? Give me a sentence and I'll sketch the workspace, workflow and agents for it."],
+    [/(monday|notion|asana|clickup|trello|different|better|compare|versus|\bvs\b|alternative)/i, () => "Boards and pages are where most tools start. Notevoro starts from the outcome. You describe it, Voro builds the workspace, wires the workflow and puts agents on the work. It is also calm on purpose: no badge storms, just one morning brief with what needs you."],
+    [/\bworkflows?\b|automat/i, () => "Workflows start from a sentence. For example: \"When a customer signs up, send a welcome email, open an onboarding board and tell the team if they chose a bigger plan.\" Voro drafts the steps and owners, and you adjust them."],
+    [/\bagents?\b/i, () => "Agents take on the work you keep postponing: research, writing, reporting, support replies. They run overnight and ask before anything important goes out. You see the results in one morning brief."],
+    [/workspace|docs?\b|pages?\b|boards?\b|database/i, () => "The workspace holds docs, boards and databases in one place. Everything links to everything else, and Voro reads it all, so you stop re-explaining your own business."],
+    [/pric|cost|free|\bplans?\b|how much/i, () => "Pricing is not set yet. Waitlist members hear about it first, before anything is public."],
+    [/when|launch|release|open\b|access|beta|date|early/i, () => "There is no public date yet. People get in through waves, and friends who join with your invite link move you up the list. Open your launch pad to see your place."],
+    [/position|queue|in line|invite|refer|move up|rank/i, () => "Your place in line and your invite link live in your launch pad. Every friend who joins with your link moves you up."],
+    [/who are you|what are you|\bvoro\b|what is notevoro|what does notevoro/i, () => "I'm Voro, the AI inside Notevoro. Notevoro brings your knowledge, work, projects and AI together in one intelligent workspace, so you can go from the first thought to the finished result. It is still being built, and this chat is a preview of how I'll work."],
+    [/sleep|overnight|morning|brief/i, () => "That's the idea. You go to sleep with a plan. Agents and workflows work overnight, and a short morning brief tells you what is done and what needs a decision."],
+    [/thank|thanks|cool|nice|great/i, () => "Glad that helps. Got an idea you want to try? Tell me in a sentence."],
+  ];
+  function localReply(text) {
+    for (const [re, fn] of KB) if (re.test(text)) return { text: fn() };
+    const words = text.trim().split(/\s+/).length;
+    if (words >= 3) return { text: planFor(text), idea: clean(text) || text };
+    return { text: "Tell me a little more. What are you building, or what would you like off your plate?" };
+  }
+  async function voroAnswer(text) {
+    try {
+      const out = await api.voro(S.chat.slice(-12).map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })));
+      if (out) return { text: out };
+    } catch (e) { console.warn('Voro function failed, using built-in replies.'); }
+    await sleep(550 + Math.random() * 500);
+    return localReply(text);
+  }
+
+  function addMsg(role, text) {
+    const el = document.createElement('div'); el.className = 'msg ' + role;
+    const b = document.createElement('div'); b.className = 'bub'; b.textContent = text; el.append(b); msgs.append(el); msgs.scrollTop = msgs.scrollHeight; return el;
+  }
+  function renderChat() {
+    msgs.innerHTML = ''; addMsg('ai', GREETING);
+    S.chat.forEach((m) => addMsg(m.role === 'user' ? 'user' : 'ai', m.content));
+    renderSugg();
+  }
+  function renderSugg() {
+    const box = $('#sugg'); box.innerHTML = '';
+    if (S.chat.length) return;
+    SUGGEST.forEach((s) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = s; b.addEventListener('click', () => { if (s === SUGGEST[0]) { chatIn.value = ''; chatIn.placeholder = 'e.g. a newsletter for indie game developers'; chatIn.focus(); addMsg('ai', 'Great. Describe it in a sentence, like “a newsletter for indie game developers”.'); } else send(s); }); box.append(b); });
+  }
+  function pushMsg(role, content) {
+    S.chat.push({ role, content }); jset('nv:chat', S.chat.slice(-40));
+    if (live() && S.user) api.chatAdd(role, content).catch(() => {});
+    if (role === 'user' && S.status) S.status.chat_count = (S.status.chat_count || 0) + 1;
+  }
+  async function typeOut(el, text) {
+    if (reduce) { el.textContent = text; return; }
+    const parts = text.split(/(\s+)/); let acc = '';
+    for (let i = 0; i < parts.length; i++) { acc += parts[i]; if (i % 3 === 0 || i === parts.length - 1) { el.textContent = acc; msgs.scrollTop = msgs.scrollHeight; await sleep(26); } }
+    el.textContent = text;
+  }
+  async function send(text) {
+    text = text.trim(); if (!text || S.busyChat) return; S.busyChat = true;
+    $('#sugg').innerHTML = ''; addMsg('user', text); pushMsg('user', text);
+    const typing = document.createElement('div'); typing.className = 'msg ai'; typing.innerHTML = '<div class="bub typing"><i></i><i></i><i></i></div>'; msgs.append(typing); msgs.scrollTop = msgs.scrollHeight;
+    const rep = await voroAnswer(text); typing.remove();
+    const el = addMsg('ai', ''); await typeOut(el.firstChild, rep.text); pushMsg('assistant', rep.text);
+    if (rep.idea) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'act'; b.innerHTML = icon('i-bookmark') + 'Save to Idea Vault';
+      b.addEventListener('click', async () => { b.disabled = true; const ok = await saveIdea(rep.idea); if (ok) b.innerHTML = icon('i-check') + 'Saved'; else b.disabled = false; });
+      el.append(b); msgs.scrollTop = msgs.scrollHeight;
+    }
+    S.busyChat = false;
+  }
+  function openChat() {
+    if (padOpen) closePad();
+    chat.hidden = false; fab.setAttribute('aria-expanded', 'true'); $('#nudge').hidden = true; $('#fabDot').hidden = true; store.set('nv:nudged', '1');
+    if (!msgs.children.length) renderChat();
+    setTimeout(() => chatIn.focus({ preventScroll: true }), 60);
+  }
+  function closeChat() { if (chat.hidden) return; chat.hidden = true; fab.setAttribute('aria-expanded', 'false'); }
+  fab.addEventListener('click', () => (chat.hidden ? openChat() : closeChat()));
+  $('#chatClose').addEventListener('click', () => { closeChat(); fab.focus(); });
+  $('#chatForm').addEventListener('submit', (e) => { e.preventDefault(); const v = chatIn.value; chatIn.value = ''; send(v); });
+  $('#nudge').addEventListener('click', openChat);
+  $('#nudge').addEventListener('keydown', (e) => { if (e.key === 'Enter') openChat(); });
+
+  /* =====================================================================
+     Page wiring: header, hero cue, delegated clicks
+     ===================================================================== */
+  document.addEventListener('click', (e) => {
+    const j = e.target.closest('.js-join'); if (j) { onJoinClick(); return; }
+    const o = e.target.closest('[data-open]'); if (o) { const v = o.dataset.open; if (M.el.hidden) M.open(v); else M.view(v); return; }
+    const a = e.target.closest('[data-action]'); if (!a || padBody.contains(a)) return;
+    if (a.dataset.action === 'openchat') openChat();
+    else if (a.dataset.action === 'openpad') openPad();
+    else if (a.dataset.action === 'closemodal') M.close();
+  });
+  $('#cue').addEventListener('click', (e) => { e.preventDefault(); $('#beatA').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); });
+  $('#brandLink').addEventListener('click', (e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' }); });
+
+  const topbar = $('#topbar');
+  const onScroll = () => topbar.classList.toggle('solid', (window.scrollY || 0) > 40);
+  addEventListener('scroll', onScroll, { passive: true }); onScroll();
+
+  // gentle nudge toward the chat after a few seconds, once
+  setTimeout(() => { if (!store.get('nv:nudged') && chat.hidden && M.el.hidden && !padOpen) { $('#nudge').hidden = false; $('#fabDot').hidden = false; setTimeout(() => { $('#nudge').hidden = true; }, 9000); } }, 9000);
+
+  S.chat = jget('nv:chat', []);
+  $('#demoNote').hidden = LIVE_CONFIGURED;
+  getRef(); updateChrome(); bootAuth();
+})();
+
+/* ---- smooth, inertial wheel scrolling (touch and keyboard stay native) ---- */
+(() => {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const root = document.scrollingElement || document.documentElement;
+  let target = root.scrollTop, cur = target, raf = 0, last = 0;
+  const max = () => Math.max(0, root.scrollHeight - innerHeight);
+  const step = (t) => {
+    const dt = Math.min(48, t - (last || t - 16.7)); last = t;
+    const k = 1 - Math.pow(1 - 0.11, dt / 16.7);
+    cur += (target - cur) * k;
+    if (Math.abs(target - cur) < 0.4) { cur = target; raf = 0; last = 0; }
+    scrollTo(0, cur);
+    if (raf) raf = requestAnimationFrame(step);
+  };
+  addEventListener('wheel', (e) => {
+    if (e.ctrlKey || e.defaultPrevented || document.body.classList.contains('lock')) return;
+    if (e.target.closest && e.target.closest('.modal, .drawer, .chat, .backdrop')) return;
+    e.preventDefault();
+    if (!raf) { cur = target = root.scrollTop; }
+    const d = e.deltaY * (e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? innerHeight : 1);
+    target = Math.min(max(), Math.max(0, target + d));
+    if (!raf) raf = requestAnimationFrame(step);
+  }, { passive: false });
+  // anything else that moves the page (keyboard, scrollbar, anchors) re-syncs the target
+  addEventListener('scroll', () => { if (!raf) cur = target = root.scrollTop; }, { passive: true });
+})();
+</script>
+
+</body>
+</html>
